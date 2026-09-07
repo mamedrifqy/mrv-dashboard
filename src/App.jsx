@@ -21,6 +21,9 @@ import {
   HelpCircle,
   XCircle,
   Filter,
+  Sprout,
+  Droplets,
+  FileText,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -85,6 +88,7 @@ const TREND = [
 
 const fmt = (n) => new Intl.NumberFormat("id-ID").format(n);
 const fmt1 = (n) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(n);
+const CO2E = "tCO\u2082e";
 
 // ---------------------------------------------------------------------------
 // Category-level emission data (baseline vs. capaian aktual), mirroring the
@@ -152,6 +156,111 @@ const NEWS = [
     excerpt: "Kegiatan sosialisasi metodologi pengukuran baseline dan capaian aktual dilaksanakan bersama dinas lingkungan hidup kabupaten/kota.",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// REAL DATA (not dummy): sourced from Laporan Tahunan FOLU NC-1 TA 2025
+// (30 Juni 2026), Bab 6.1.2 — Outcome 1 Bidang II, Tabel 6.9 & Tabel 6.11.
+// Headline totals are taken from the report's narrative text (most reliable);
+// per-intervention uncertainty figures are taken directly from Tabel 6.11.
+// ---------------------------------------------------------------------------
+const NC1_REPORT_META = {
+  title: "Laporan Tahunan FOLU NC-1 TA 2025",
+  asOf: "30 Juni 2026",
+};
+
+const NC1_PLANTING = {
+  targetHa: 19006,
+  realisasi2024Ha: 8170,
+  realisasi2025Ha: 18699,
+  pctOfTarget: 98.4,
+};
+
+// Total potensi karbon Bidang II, dibandingkan antara metode lama (alometrik
+// pohon dewasa berbasis tipe ekosistem) dan adjustment alometrik baru
+// (Adinugroho et al. 2023, untuk tanaman muda/small trees).
+const NC1_METHOD_COMPARISON = [
+  { tahun: 2024, alometrikLama: 22159, adjustmentBaru: 14687.65 },
+  { tahun: 2025, alometrikLama: 36814.2, adjustmentBaru: 22277.68 },
+];
+
+// Tabel 6.11 — Nilai Uncertainty sebagai Skenario Kerja Sementara.
+const NC1_INTERVENTIONS = [
+  {
+    key: "terestrial",
+    label: "Penanaman RHL Terestrial",
+    icon: TreePine,
+    color: "#2C4A3A",
+    estimasi: 806.87,
+    uncertaintyPct: 50,
+    lower: 403.44,
+    upper: 1210.31,
+    status: "Estimasi awal; perlu data diameter, tinggi, survival rate aktual, dan verifikasi spasial.",
+  },
+  {
+    key: "mangrove",
+    label: "Mangrove",
+    icon: Waves,
+    color: "#2E6B6B",
+    estimasi: 587.45,
+    uncertaintyPct: 50,
+    lower: 293.73,
+    upper: 881.18,
+    status: "Estimasi awal; perlu pemisahan seedling/sapling, monitoring substrat, pasang surut, dan survival.",
+  },
+  {
+    key: "gambut",
+    label: "Gambut",
+    icon: Droplets,
+    color: "#8A6A2E",
+    estimasi: 20712.75,
+    uncertaintyPct: 60,
+    lower: 8285.1,
+    upper: 33140.4,
+    status: "Estimasi awal berisiko tinggi; perlu validasi hidrologi, kebakaran, drainase, dan dekomposisi gambut.",
+  },
+  {
+    key: "bambu",
+    label: "Bambu",
+    icon: Sprout,
+    color: "#5B4A7A",
+    estimasi: 14.8,
+    uncertaintyPct: 35,
+    lower: 9.62,
+    upper: 19.98,
+    status: "Estimasi awal; perlu data diameter culm, jumlah culm/rumpun, dan survival rumpun.",
+  },
+  {
+    key: "agroforestri",
+    label: "MPTS / Agroforestri & IP Lain",
+    icon: Sprout,
+    color: "#B9791F",
+    estimasi: 155.8,
+    uncertaintyPct: 50,
+    lower: 77.9,
+    upper: 233.7,
+    status: "Estimasi awal; perlu pemisahan jenis tanaman, diameter, tinggi, survival, dan data kelompok.",
+  },
+];
+
+const NC1_TOTAL = {
+  estimasi: 22277.68,
+  uncertaintyPct: 55.8,
+  lower: 9846.0,
+  upper: 34709.36,
+};
+
+const NC1_SURVIVAL = [
+  { label: "Ditjen PDASRH (P0)", value: 89.62 },
+  { label: "Dishut Prov. Kalimantan Selatan (P0)", value: 75 },
+  { label: "Rehabilitasi mangrove (rata-rata)", value: 60 },
+  { label: "YBLL \u2014 bambu & MPTS", value: 60 },
+];
+
+const NC1_METHOD_NOTE =
+  "Perhitungan menggunakan persamaan AGB = 0,13868 \u00d7 (D\u00b2H)^0,67265 (Adinugroho et al., 2023), " +
+  "dikembangkan untuk tanaman kecil berdiameter <5 cm agar tidak overestimate biomassa tanaman muda. " +
+  "Biomassa bawah permukaan dihitung dengan root-to-shoot ratio \u2248 0,215 (rentang 0,196\u20130,235), " +
+  "cadangan karbon dengan faktor karbon 0,47, dan konversi ke CO\u2082e dengan faktor 44/12.";
 
 // Visual (not true-to-scale) half-width for a site's AOI square on the map,
 // scaled by hectares so bigger blocks read as bigger shapes.
@@ -469,7 +578,132 @@ function SpatialView({ sites, selected, setSelected }) {
   );
 }
 
-function CarbonView({ sites }) {
+function UncertaintyRow({ item }) {
+  const Icon = item.icon;
+  const scaleMax = item.upper * 1.15;
+  const lowerPct = (item.lower / scaleMax) * 100;
+  const upperPct = (item.upper / scaleMax) * 100;
+  const estPct = (item.estimasi / scaleMax) * 100;
+  return (
+    <div style={{ padding: "14px 18px", borderTop: "1px solid #E5E2D6" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon size={15} color={item.color} strokeWidth={2} />
+          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>{item.label}</span>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
+          {fmt1(item.estimasi)} {CO2E}
+          <span style={{ color: "#8A8677", fontWeight: 400 }}> ({"\u00b1"}{item.uncertaintyPct}%)</span>
+        </span>
+      </div>
+      <div style={{ position: "relative", height: 10, background: "#EDEAD9" }}>
+        <div style={{ position: "absolute", left: `${lowerPct}%`, width: `${Math.max(upperPct - lowerPct, 0.5)}%`, top: 0, bottom: 0, background: item.color, opacity: 0.35 }} />
+        <div style={{ position: "absolute", left: `${estPct}%`, width: 2, top: -3, bottom: -3, background: item.color }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 4 }}>
+        <span>{fmt1(item.lower)} {CO2E}</span>
+        <span>{fmt1(item.upper)} {CO2E}</span>
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginTop: 6, lineHeight: 1.5 }}>{item.status}</div>
+    </div>
+  );
+}
+
+// Real (non-dummy) NC-1 carbon panel, sourced from Laporan Tahunan FOLU NC-1
+// TA 2025 \u2014 shown whenever the Karbon tab is scoped to PMU NC-1.
+function NC1CarbonPanel() {
+  const kenaikanPct = ((NC1_METHOD_COMPARISON[1].adjustmentBaru - NC1_METHOD_COMPARISON[0].adjustmentBaru) / NC1_METHOD_COMPARISON[0].adjustmentBaru) * 100;
+  return (
+    <div>
+      <Note tone="neutral">
+        Data pada panel ini bersumber dari <strong>{NC1_REPORT_META.title}</strong> (per {NC1_REPORT_META.asOf}), bukan data dummy.
+        Filter IP/Status di atas tidak berlaku untuk panel ini karena laporan sumber melaporkan pada level implementing partner,
+        bukan titik lokasi individual.
+      </Note>
+
+      <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginTop: 16 }}>
+        {[
+          { label: "Realisasi tanam 2025", value: fmt(NC1_PLANTING.realisasi2025Ha), unit: "ha" },
+          { label: "% dari target", value: `${NC1_PLANTING.pctOfTarget}%`, unit: `dari ${fmt(NC1_PLANTING.targetHa)} ha` },
+          { label: "Potensi karbon 2025 (adjustment)", value: fmt1(NC1_TOTAL.estimasi), unit: "tCO\u2082e", accent: true },
+          { label: "Kenaikan vs. 2024", value: `+${kenaikanPct.toFixed(1)}%`, unit: "adjustment baru" },
+        ].map((it, i) => (
+          <div key={it.label} style={{ flex: "1 1 190px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 22, color: it.accent ? "#2C4A3A" : "#1B2A22", lineHeight: 1.15 }}>
+              {it.value}
+              <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 0 }}>
+        <SectionTitle>Alometrik lama vs. adjustment alometrik baru</SectionTitle>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677", marginTop: -8, marginBottom: 8 }}>
+          Adjustment menggunakan persamaan untuk tanaman muda (Adinugroho et al., 2023), mengoreksi estimasi 2025 dari{" "}
+          {fmt1(NC1_METHOD_COMPARISON[1].alometrikLama)} menjadi {fmt1(NC1_METHOD_COMPARISON[1].adjustmentBaru)} {CO2E} agar tidak overclaim
+          biomassa tanaman muda.
+        </div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={NC1_METHOD_COMPARISON} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
+            <XAxis dataKey="tahun" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
+            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={60} />
+            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} tCO\u2082e`} />
+            <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
+            <Bar dataKey="alometrikLama" name="Alometrik lama" fill="#8A8677" />
+            <Bar dataKey="adjustmentBaru" name="Adjustment baru" fill="#2C4A3A" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionTitle>Estimasi & rentang uncertainty per jenis intervensi (2025)</SectionTitle>
+        <div style={{ border: "1px solid #D6D2C4" }}>
+          {NC1_INTERVENTIONS.map((item) => (
+            <UncertaintyRow key={item.key} item={item} />
+          ))}
+          <div style={{ padding: "14px 18px", borderTop: "1px solid #D6D2C4", background: "#EDEAD9" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Total Bidang II</span>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
+                {fmt1(NC1_TOTAL.estimasi)} {CO2E} <span style={{ color: "#8A8677", fontWeight: 400 }}>({"\u00b1"}{NC1_TOTAL.uncertaintyPct}% indikatif)</span>
+              </span>
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginTop: 4 }}>
+              Rentang {fmt1(NC1_TOTAL.lower)}{"\u2013"}{fmt1(NC1_TOTAL.upper)} {CO2E}. Estimasi awal berbasis activity data dan adjustment alometrik;
+              belum menjadi klaim karbon final.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionTitle>Survival rate yang dilaporkan</SectionTitle>
+        <div style={{ border: "1px solid #D6D2C4" }}>
+          {NC1_SURVIVAL.map((s, i) => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1B2A22" }}>{s.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: s.value < 70 ? "#B9791F" : "#2C4A3A" }}>{s.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid #D6D2C4", padding: "14px 18px" }}>
+        <FileText size={16} color="#5C5A4E" style={{ flex: "none", marginTop: 2 }} />
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", lineHeight: 1.6 }}>{NC1_METHOD_NOTE}</div>
+      </div>
+    </div>
+  );
+}
+
+function CarbonView({ sites, pmuFilter }) {
+  if (pmuFilter === "NC-1") {
+    return <NC1CarbonPanel />;
+  }
+
   const byPmuJenis = useMemo(() => {
     return Object.keys(PMU_META).map((pmu) => {
       const row = { pmu: PMU_META[pmu].label };
@@ -500,7 +734,7 @@ function CarbonView({ sites }) {
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 24, color: "#1B2A22" }}>
                 {fmt(r.total)}
-                <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>tCO\u2082e</span>
+                <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>{CO2E}</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", marginTop: 3 }}>{pct}% dari total cadangan</div>
             </div>
@@ -527,7 +761,7 @@ function CarbonView({ sites }) {
       <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px" }}>
         <SectionTitle>Proyeksi menuju net sink 2030</SectionTitle>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677", marginTop: -8, marginBottom: 8 }}>
-          Nilai negatif menunjukkan penyerapan bersih (juta tCO\u2082e). Target program: net sink \u2212140 juta tCO\u2082e pada 2030.
+          Nilai negatif menunjukkan penyerapan bersih (juta {CO2E}). Target program: net sink {"\u2212"}140 juta {CO2E} pada 2030.
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={TREND} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
@@ -892,7 +1126,7 @@ export default function App() {
         {tab === "pengukuran" && <MeasurementView year={year} setYear={setYear} />}
         {tab === "pelaporan" && <ReportingView />}
         {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} />}
-        {tab === "karbon" && <CarbonView sites={filteredSites} />}
+        {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} />}
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
           {tab === "peta" || tab === "karbon"
