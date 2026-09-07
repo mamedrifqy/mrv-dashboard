@@ -849,6 +849,7 @@ export default function App() {
               ["pengukuran", "Pengukuran"],
               ["pelaporan", "Pelaporan"],
               ["peta", "Peta"],
+              ["karbon", "Karbon"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -871,17 +872,19 @@ export default function App() {
         </div>
       </div>
 
-      {tab === "peta" && <KpiStrip sites={filteredSites} />}
+      {(tab === "peta" || tab === "karbon") && <KpiStrip sites={filteredSites} />}
 
       <div style={{ padding: "18px 26px 40px", maxWidth: 1180, margin: "0 auto" }}>
-        {tab === "peta" && (
+        {(tab === "peta" || tab === "karbon") && (
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#5C5A4E", fontSize: 12.5 }}>
               <Filter size={13} /> Filter
             </div>
             <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
             <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
-            <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", ...Object.keys(STATUS_META)]} renderLabel={(o) => o} />
+            {tab === "peta" && (
+              <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", ...Object.keys(STATUS_META)]} renderLabel={(o) => o} />
+            )}
           </div>
         )}
 
@@ -889,9 +892,10 @@ export default function App() {
         {tab === "pengukuran" && <MeasurementView year={year} setYear={setYear} />}
         {tab === "pelaporan" && <ReportingView />}
         {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} />}
+        {tab === "karbon" && <CarbonView sites={filteredSites} />}
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
-          {tab === "peta"
+          {tab === "peta" || tab === "karbon"
             ? "Batas provinsi bersumber dari data GeoJSON yang diberikan (disederhanakan untuk tampilan). Lokasi, IP, AOI, dan angka capaian/karbon pada dashboard ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program."
             : "Seluruh angka baseline, capaian aktual, dan pengurangan emisi pada halaman ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka. Belum merepresentasikan capaian aktual program."}
         </div>
