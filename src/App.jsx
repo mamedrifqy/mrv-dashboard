@@ -84,6 +84,74 @@ const TREND = [
 ];
 
 const fmt = (n) => new Intl.NumberFormat("id-ID").format(n);
+const fmt1 = (n) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(n);
+
+// ---------------------------------------------------------------------------
+// Category-level emission data (baseline vs. capaian aktual), mirroring the
+// structure used on the provincial MRV site: a fixed reference-level baseline
+// per category, and yearly actual emissions used to compute reduction
+// achieved. All figures are dummy (juta ton CO2e / year).
+// ---------------------------------------------------------------------------
+const EMISSION_CATEGORIES = [
+  { key: "deforestasi", label: "Deforestasi", color: "#A23B3B", baseline: 14.2 },
+  { key: "degradasi", label: "Degradasi Hutan", color: "#B9791F", baseline: 5.4 },
+  { key: "mangrove", label: "Tanah Mineral Mangrove", color: "#2E6B6B", baseline: 0.9 },
+  { key: "gambut", label: "Dekomposisi Gambut", color: "#8A6A2E", baseline: 1.8 },
+  { key: "kebakaran", label: "Kebakaran Hutan & Lahan", color: "#5B4A7A", baseline: 0.76 },
+];
+
+const EMISSION_ACTUAL_BY_YEAR = {
+  2017: { deforestasi: 4.8, degradasi: 2.3, mangrove: 0.5, gambut: 1.1, kebakaran: 1.9 },
+  2018: { deforestasi: 3.9, degradasi: 2.0, mangrove: 0.45, gambut: 0.95, kebakaran: 0.6 },
+  2019: { deforestasi: 4.5, degradasi: 2.1, mangrove: 0.5, gambut: 1.0, kebakaran: 3.2 },
+  2020: { deforestasi: 2.6, degradasi: 1.8, mangrove: 0.35, gambut: 0.8, kebakaran: 0.55 },
+  2021: { deforestasi: 2.1, degradasi: 1.6, mangrove: 0.3, gambut: 0.7, kebakaran: 0.49 },
+};
+const EMISSION_YEARS = Object.keys(EMISSION_ACTUAL_BY_YEAR).map(Number).sort();
+
+function emissionRowsForYear(year) {
+  const actuals = EMISSION_ACTUAL_BY_YEAR[year];
+  return EMISSION_CATEGORIES.map((c) => ({
+    ...c,
+    aktual: actuals[c.key],
+    reduksi: c.baseline - actuals[c.key],
+  }));
+}
+
+function emissionTotalsForYear(year) {
+  const rows = emissionRowsForYear(year);
+  return rows.reduce(
+    (acc, r) => ({
+      baseline: acc.baseline + r.baseline,
+      aktual: acc.aktual + r.aktual,
+      reduksi: acc.reduksi + r.reduksi,
+    }),
+    { baseline: 0, aktual: 0, reduksi: 0 }
+  );
+}
+
+const EMISSION_TREND = EMISSION_YEARS.map((y) => {
+  const t = emissionTotalsForYear(y);
+  return { tahun: y, baseline: Number(t.baseline.toFixed(2)), aktual: Number(t.aktual.toFixed(2)), reduksi: Number(t.reduksi.toFixed(2)) };
+});
+
+const NEWS = [
+  {
+    title: "Verifikasi capaian pengurangan emisi tahun 2021 diselesaikan",
+    date: "12 Maret 2022",
+    excerpt: "Tim verifikator independen menyelesaikan proses telaah dokumen dan kunjungan lapangan untuk capaian tahun laporan 2021.",
+  },
+  {
+    title: "Pembaruan basemap dan lapisan aksi mitigasi pada Peta MRV",
+    date: "28 Januari 2022",
+    excerpt: "Lapisan batas administrasi dan aksi mitigasi pada modul Peta diperbarui mengikuti data terbaru dari perangkat daerah terkait.",
+  },
+  {
+    title: "Sosialisasi metodologi pengukuran emisi kepada perangkat daerah",
+    date: "05 Desember 2021",
+    excerpt: "Kegiatan sosialisasi metodologi pengukuran baseline dan capaian aktual dilaksanakan bersama dinas lingkungan hidup kabupaten/kota.",
+  },
+];
 
 // Visual (not true-to-scale) half-width for a site's AOI square on the map,
 // scaled by hectares so bigger blocks read as bigger shapes.
@@ -509,6 +577,212 @@ function CarbonView({ sites }) {
   );
 }
 
+function EmissionKpiStrip({ year }) {
+  const t = emissionTotalsForYear(year);
+  const items = [
+    { label: `Baseline emisi ${year}`, value: fmt1(t.baseline), unit: "juta tCO\u2082e" },
+    { label: `Capaian aktual ${year}`, value: fmt1(t.aktual), unit: "juta tCO\u2082e" },
+    { label: "Pengurangan emisi tercapai", value: fmt1(t.reduksi), unit: "juta tCO\u2082e", accent: true },
+    { label: "% dari baseline", value: `${Math.round((t.reduksi / t.baseline) * 100)}%`, unit: "tereduksi" },
+  ];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #D6D2C4", borderBottom: "1px solid #D6D2C4" }}>
+      {items.map((it, i) => (
+        <div key={it.label} style={{ flex: "1 1 180px", padding: "16px 22px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 26, color: it.accent ? "#2C4A3A" : "#1B2A22", lineHeight: 1.1 }}>
+            {it.value}
+            <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>{it.unit}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmissionCategoryTable({ year }) {
+  const rows = emissionRowsForYear(year);
+  const totals = emissionTotalsForYear(year);
+  return (
+    <div style={{ border: "1px solid #D6D2C4" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13 }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #D6D2C4" }}>
+            {["Kategori", "Baseline (juta tCO\u2082e)", "Capaian aktual (juta tCO\u2082e)", "Pengurangan emisi (juta tCO\u2082e)"].map((h) => (
+              <th key={h} style={{ textAlign: "left", padding: "10px 16px", color: "#5C5A4E", fontWeight: 500, fontSize: 12 }}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} style={{ borderBottom: "1px solid #E5E2D6" }}>
+              <td style={{ padding: "10px 16px", color: "#1B2A22", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 9, height: 9, background: r.color, display: "inline-block", flex: "none" }} />
+                {r.label}
+              </td>
+              <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.baseline)}</td>
+              <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.aktual)}</td>
+              <td style={{ padding: "10px 16px", color: "#2C4A3A", fontWeight: 500 }}>{fmt1(r.reduksi)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>Total</td>
+            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>{fmt1(totals.baseline)}</td>
+            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>{fmt1(totals.aktual)}</td>
+            <td style={{ padding: "10px 16px", color: "#2C4A3A", fontWeight: 600 }}>{fmt1(totals.reduksi)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// --- Beranda (Homepage) -----------------------------------------------------
+function BerandaView({ year, setTab }) {
+  return (
+    <div>
+      <EmissionKpiStrip year={year} />
+      <div style={{ padding: "22px 0 0" }}>
+        <SectionTitle>Ringkasan capaian pengurangan emisi {year}</SectionTitle>
+        <EmissionCategoryTable year={year} />
+
+        <div style={{ display: "flex", gap: 14, marginTop: 18, flexWrap: "wrap" }}>
+          {[
+            ["pengukuran", "Lihat rincian Pengukuran \u2192"],
+            ["pelaporan", "Lihat Pelaporan resmi \u2192"],
+            ["peta", "Buka Peta lokasi kegiatan \u2192"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                background: "#1B2A22",
+                color: "#EEF0E7",
+                border: "none",
+                padding: "10px 16px",
+                fontFamily: "'IBM Plex Sans', sans-serif",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Berita terbaru</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {NEWS.map((n, i) => (
+              <div key={n.title} style={{ padding: "16px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677", marginBottom: 4 }}>{n.date}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 14.5, color: "#1B2A22", marginBottom: 4 }}>{n.title}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E", lineHeight: 1.55 }}>{n.excerpt}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Pengukuran (Measurement) ------------------------------------------------
+function MeasurementView({ year, setYear }) {
+  const rows = emissionRowsForYear(year);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Tahun laporan</span>
+        <Select label="Tahun" value={String(year)} onChange={(v) => setYear(Number(v))} options={EMISSION_YEARS.map(String)} renderLabel={(o) => o} />
+      </div>
+
+      <EmissionKpiStrip year={year} />
+
+      <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 18 }}>
+        <SectionTitle>Baseline vs. capaian aktual per kategori, {year}</SectionTitle>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} interval={0} angle={-12} textAnchor="end" height={60} />
+            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={50} />
+            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} juta tCO\u2082e`} />
+            <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
+            <Bar dataKey="baseline" name="Baseline" fill="#8A8677" />
+            <Bar dataKey="aktual" name="Capaian aktual" fill="#2C4A3A" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionTitle>Rincian per kategori</SectionTitle>
+        <EmissionCategoryTable year={year} />
+      </div>
+    </div>
+  );
+}
+
+// --- Pelaporan (Reporting) ----------------------------------------------------
+function ReportingView() {
+  return (
+    <div>
+      <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px 10px" }}>
+        <SectionTitle>
+          Tren pengurangan emisi, {EMISSION_YEARS[0]}
+          {"\u2013"}
+          {EMISSION_YEARS[EMISSION_YEARS.length - 1]}
+        </SectionTitle>
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={EMISSION_TREND} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
+            <XAxis dataKey="tahun" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
+            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={50} />
+            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} juta tCO\u2082e`} />
+            <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
+            <Line type="monotone" dataKey="baseline" stroke="#8A8677" strokeDasharray="4 3" dot={false} name="Baseline" strokeWidth={1.6} />
+            <Line type="monotone" dataKey="aktual" stroke="#A23B3B" dot={{ r: 3 }} name="Capaian aktual" strokeWidth={2} />
+            <Line type="monotone" dataKey="reduksi" stroke="#2C4A3A" dot={{ r: 3 }} name="Pengurangan emisi" strokeWidth={2.2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <SectionTitle>Laporan resmi per tahun</SectionTitle>
+        <div style={{ border: "1px solid #D6D2C4" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #D6D2C4" }}>
+                {["Tahun laporan", "Baseline (juta tCO\u2082e)", "Capaian aktual (juta tCO\u2082e)", "Pengurangan emisi (juta tCO\u2082e)", "% tereduksi"].map((h) => (
+                  <th key={h} style={{ textAlign: "left", padding: "10px 16px", color: "#5C5A4E", fontWeight: 500, fontSize: 12 }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {EMISSION_TREND.map((r) => (
+                <tr key={r.tahun} style={{ borderBottom: "1px solid #E5E2D6" }}>
+                  <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 500 }}>{r.tahun}</td>
+                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.baseline)}</td>
+                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.aktual)}</td>
+                  <td style={{ padding: "10px 16px", color: "#2C4A3A", fontWeight: 500 }}>{fmt1(r.reduksi)}</td>
+                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{Math.round((r.reduksi / r.baseline) * 100)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677", marginTop: 10, lineHeight: 1.6 }}>
+          Baseline dihitung dari tingkat rujukan emisi (FREL) per kategori dan bersifat tetap antartahun. Capaian aktual dan
+          pengurangan emisi bersifat dummy untuk keperluan demonstrasi antarmuka.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SectionTitle({ children }) {
   return <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 17, color: "#1B2A22", marginBottom: 12 }}>{children}</div>;
 }
@@ -533,7 +807,8 @@ function Select({ label, value, onChange, options, renderLabel }) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("spasial");
+  const [tab, setTab] = useState("beranda");
+  const [year, setYear] = useState(EMISSION_YEARS[EMISSION_YEARS.length - 1]);
   const [pmuFilter, setPmuFilter] = useState("Semua");
   const [ipFilter, setIpFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
@@ -570,8 +845,10 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 22 }}>
             {[
-              ["spasial", "Spasial"],
-              ["karbon", "Karbon"],
+              ["beranda", "Beranda"],
+              ["pengukuran", "Pengukuran"],
+              ["pelaporan", "Pelaporan"],
+              ["peta", "Peta"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -594,30 +871,29 @@ export default function App() {
         </div>
       </div>
 
-      <KpiStrip sites={filteredSites} />
+      {tab === "peta" && <KpiStrip sites={filteredSites} />}
 
       <div style={{ padding: "18px 26px 40px", maxWidth: 1180, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#5C5A4E", fontSize: 12.5 }}>
-            <Filter size={13} /> Filter
-          </div>
-          <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
-          <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
-          {tab === "spasial" && (
+        {tab === "peta" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#5C5A4E", fontSize: 12.5 }}>
+              <Filter size={13} /> Filter
+            </div>
+            <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
+            <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
             <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", ...Object.keys(STATUS_META)]} renderLabel={(o) => o} />
-          )}
-        </div>
-
-        {tab === "spasial" ? (
-          <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} />
-        ) : (
-          <CarbonView sites={filteredSites} />
+          </div>
         )}
 
+        {tab === "beranda" && <BerandaView year={year} setTab={setTab} />}
+        {tab === "pengukuran" && <MeasurementView year={year} setYear={setYear} />}
+        {tab === "pelaporan" && <ReportingView />}
+        {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} />}
+
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
-          Batas provinsi bersumber dari data GeoJSON yang diberikan (disederhanakan untuk tampilan). Lokasi, IP, AOI, dan angka
-          capaian/karbon pada dashboard ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti
-          struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program.
+          {tab === "peta"
+            ? "Batas provinsi bersumber dari data GeoJSON yang diberikan (disederhanakan untuk tampilan). Lokasi, IP, AOI, dan angka capaian/karbon pada dashboard ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program."
+            : "Seluruh angka baseline, capaian aktual, dan pengurangan emisi pada halaman ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka. Belum merepresentasikan capaian aktual program."}
         </div>
       </div>
     </div>
