@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import L from "leaflet";
 import {
   BarChart,
   Bar,
@@ -55,20 +56,20 @@ const JENIS_META = {
 // cx / cy are placed on the real province geometry below (in map units),
 // hand-offset where a province holds more than one site so markers don't stack.
 const SITES = [
-  { id: "S01", name: "Blok Rehabilitasi Siak Kecil", provinsi: "Riau", pmu: "NC-1", ip: "IP Riau Lestari", kegiatan: "Rehabilitasi Mangrove", luas: 128, jenisPck: "Mangrove", pck: 4210, status: "Terverifikasi", cx: 127.6, cy: 114.2 },
-  { id: "S02", name: "Blok Penanaman Kampar Kiri", provinsi: "Riau", pmu: "NC-1", ip: "IP Riau Lestari", kegiatan: "Rehabilitasi Lahan", luas: 340, jenisPck: "Terestrial", pck: 9850, status: "Terverifikasi", cx: 167.6, cy: 132.2 },
-  { id: "S03", name: "Blok Konservasi Batang Toru", provinsi: "Sumatera Utara", pmu: "NC-1", ip: "IP Sumut Hijau", kegiatan: "Konservasi", luas: 95, jenisPck: "Terestrial", pck: 3120, status: "Perlu Klarifikasi", cx: 91.1, cy: 82.1 },
-  { id: "S04", name: "Blok Mangrove Sembilang", provinsi: "Sumatera Selatan", pmu: "NC-1", ip: "IP Sumsel Bakau", kegiatan: "Rehabilitasi Mangrove", luas: 210, jenisPck: "Mangrove", pck: 7460, status: "Overlap Terdeteksi", cx: 199.8, cy: 201.8, overlapIp: "IP Sumsel Bakau Mitra" },
-  { id: "S05", name: "Blok Penanaman Kapuas Hulu", provinsi: "Kalimantan Barat", pmu: "NC-2&3", ip: "IP Borneo Asri", kegiatan: "Rehabilitasi Lahan", luas: 415, jenisPck: "Terestrial", pck: 11230, status: "Terverifikasi", cx: 351.5, cy: 133.4 },
-  { id: "S06", name: "Blok Gambut Katingan", provinsi: "Kalimantan Tengah", pmu: "NC-2&3", ip: "IP Katingan Mitra", kegiatan: "Rehabilitasi Lahan", luas: 520, jenisPck: "Terestrial", pck: 14980, status: "Terverifikasi", cx: 382.5, cy: 158.8 },
-  { id: "S07", name: "Blok Cegah Deforestasi Sebangau", provinsi: "Kalimantan Tengah", pmu: "NC-2&3", ip: "IP Katingan Mitra", kegiatan: "Konservasi", luas: 610, jenisPck: "Deforestasi", pck: 16240, status: "Terverifikasi", cx: 418.5, cy: 176.8 },
-  { id: "S08", name: "Blok Rehabilitasi Kutai Barat", provinsi: "Kalimantan Timur", pmu: "NC-2&3", ip: "IP Kaltim Asri", kegiatan: "Rehabilitasi Lahan", luas: 280, jenisPck: "Terestrial", pck: 8010, status: "Perlu Klarifikasi", cx: 448.1, cy: 114.0 },
-  { id: "S09", name: "Blok Mangrove Teluk Balikpapan", provinsi: "Kalimantan Timur", pmu: "NC-2&3", ip: "IP Kaltim Asri", kegiatan: "Rehabilitasi Mangrove", luas: 76, jenisPck: "Mangrove", pck: 2650, status: "Di Luar RO", cx: 484.1, cy: 132.0 },
-  { id: "S10", name: "Blok Konservasi Wallacea", provinsi: "Sulawesi Tengah", pmu: "NC-2&3", ip: "IP Sulteng Mandiri", kegiatan: "Konservasi", luas: 190, jenisPck: "Terestrial", pck: 5320, status: "Terverifikasi", cx: 566.8, cy: 153.9 },
-  { id: "S11", name: "Blok Rehabilitasi Merauke", provinsi: "Papua Selatan", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Rehabilitasi Lahan", luas: 380, jenisPck: "Terestrial", pck: 10420, status: "Terverifikasi", cx: 971.1, cy: 273.8 },
-  { id: "S12", name: "Blok Mangrove Mimika", provinsi: "Papua Tengah", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Rehabilitasi Mangrove", luas: 152, jenisPck: "Mangrove", pck: 5680, status: "Terverifikasi", cx: 904.5, cy: 216.8 },
-  { id: "S13", name: "Blok Cegah Deforestasi Mamberamo", provinsi: "Papua", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Konservasi", luas: 705, jenisPck: "Deforestasi", pck: 19870, status: "Terverifikasi", cx: 950.0, cy: 190.6 },
-  { id: "S14", name: "Blok Penanaman Sorong Selatan", provinsi: "Papua Barat Daya", pmu: "NC-4", ip: "IP Papua Barat Lestari", kegiatan: "Rehabilitasi Lahan", luas: 165, jenisPck: "Terestrial", pck: 4590, status: "Perlu Klarifikasi", cx: 811.1, cy: 157.6 },
+  { id: "S01", name: "Blok Rehabilitasi Siak Kecil", provinsi: "Riau", pmu: "NC-1", ip: "IP Riau Lestari", kegiatan: "Rehabilitasi Mangrove", luas: 128, jenisPck: "Mangrove", pck: 4210, status: "Terverifikasi", lat: 1.15, lng: 102.05 },
+  { id: "S02", name: "Blok Penanaman Kampar Kiri", provinsi: "Riau", pmu: "NC-1", ip: "IP Riau Lestari", kegiatan: "Rehabilitasi Lahan", luas: 340, jenisPck: "Terestrial", pck: 9850, status: "Terverifikasi", lat: 0.35, lng: 100.95 },
+  { id: "S03", name: "Blok Konservasi Batang Toru", provinsi: "Sumatera Utara", pmu: "NC-1", ip: "IP Sumut Hijau", kegiatan: "Konservasi", luas: 95, jenisPck: "Terestrial", pck: 3120, status: "Perlu Klarifikasi", lat: 1.55, lng: 99.15 },
+  { id: "S04", name: "Blok Mangrove Sembilang", provinsi: "Sumatera Selatan", pmu: "NC-1", ip: "IP Sumsel Bakau", kegiatan: "Rehabilitasi Mangrove", luas: 210, jenisPck: "Mangrove", pck: 7460, status: "Overlap Terdeteksi", lat: -2.06, lng: 104.66, overlapIp: "IP Sumsel Bakau Mitra" },
+  { id: "S05", name: "Blok Penanaman Kapuas Hulu", provinsi: "Kalimantan Barat", pmu: "NC-2&3", ip: "IP Borneo Asri", kegiatan: "Rehabilitasi Lahan", luas: 415, jenisPck: "Terestrial", pck: 11230, status: "Terverifikasi", lat: 0.85, lng: 112.9 },
+  { id: "S06", name: "Blok Gambut Katingan", provinsi: "Kalimantan Tengah", pmu: "NC-2&3", ip: "IP Katingan Mitra", kegiatan: "Rehabilitasi Lahan", luas: 520, jenisPck: "Terestrial", pck: 14980, status: "Terverifikasi", lat: -1.9, lng: 113.3 },
+  { id: "S07", name: "Blok Cegah Deforestasi Sebangau", provinsi: "Kalimantan Tengah", pmu: "NC-2&3", ip: "IP Katingan Mitra", kegiatan: "Konservasi", luas: 610, jenisPck: "Deforestasi", pck: 16240, status: "Terverifikasi", lat: -2.3, lng: 113.8 },
+  { id: "S08", name: "Blok Rehabilitasi Kutai Barat", provinsi: "Kalimantan Timur", pmu: "NC-2&3", ip: "IP Kaltim Asri", kegiatan: "Rehabilitasi Lahan", luas: 280, jenisPck: "Terestrial", pck: 8010, status: "Perlu Klarifikasi", lat: -0.4, lng: 115.6 },
+  { id: "S09", name: "Blok Mangrove Teluk Balikpapan", provinsi: "Kalimantan Timur", pmu: "NC-2&3", ip: "IP Kaltim Asri", kegiatan: "Rehabilitasi Mangrove", luas: 76, jenisPck: "Mangrove", pck: 2650, status: "Di Luar RO", lat: -1.25, lng: 116.75 },
+  { id: "S10", name: "Blok Konservasi Wallacea", provinsi: "Sulawesi Tengah", pmu: "NC-2&3", ip: "IP Sulteng Mandiri", kegiatan: "Konservasi", luas: 190, jenisPck: "Terestrial", pck: 5320, status: "Terverifikasi", lat: -1.4, lng: 121.4 },
+  { id: "S11", name: "Blok Rehabilitasi Merauke", provinsi: "Papua Selatan", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Rehabilitasi Lahan", luas: 380, jenisPck: "Terestrial", pck: 10420, status: "Terverifikasi", lat: -8.47, lng: 140.4 },
+  { id: "S12", name: "Blok Mangrove Mimika", provinsi: "Papua Tengah", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Rehabilitasi Mangrove", luas: 152, jenisPck: "Mangrove", pck: 5680, status: "Terverifikasi", lat: -4.5, lng: 136.9 },
+  { id: "S13", name: "Blok Cegah Deforestasi Mamberamo", provinsi: "Papua", pmu: "NC-4", ip: "IP Papua Tumbuh", kegiatan: "Konservasi", luas: 705, jenisPck: "Deforestasi", pck: 19870, status: "Terverifikasi", lat: -2.0, lng: 137.8 },
+  { id: "S14", name: "Blok Penanaman Sorong Selatan", provinsi: "Papua Barat Daya", pmu: "NC-4", ip: "IP Papua Barat Lestari", kegiatan: "Rehabilitasi Lahan", luas: 165, jenisPck: "Terestrial", pck: 4590, status: "Perlu Klarifikasi", lat: -1.6, lng: 131.6 },
 ];
 
 // Target program: net sink -140 juta tCO2e pada 2030 (Perpres 98/2021).
@@ -255,6 +256,43 @@ const NC1_SURVIVAL = [
   { label: "Rehabilitasi mangrove (rata-rata)", value: 60 },
   { label: "YBLL \u2014 bambu & MPTS", value: 60 },
 ];
+
+// Tabel 6.9 \u2014 Hasil perhitungan Penyesuaian Metodologi Perhitungan Peningkatan
+// Cadangan Karbon melalui Adjustment Allometrik (per implementing partner).
+// Nilai null berarti sel kosong pada tabel sumber. Beberapa sel pada baris
+// Mangrove Ditjen PDASRH tampak tumpang tindih pada tabel sumber (kolom
+// Alometrik Lama 2024 dan Adjustment Baru 2024 bernilai sama, 13.465);
+// ditampilkan apa adanya dengan catatan pada UI.
+const NC1_IP_TABLE = [
+  { no: 1, ip: "Ditjen PDASRH", provinsi: "Aceh, Lampung, Sumatra Utara, dan 14 provinsi lainnya", tipeLahan: "Terestrial", target: 14080, real2024: 7413, real2025: 13428, lama2024: 6831, lama2025: 13170.37, baru2024: 513.93, baru2025: 806.87 },
+  { no: 1, ip: "Ditjen PDASRH", provinsi: "Sumatra Selatan, Jawa Timur, Bali, Lombok, Maluku", tipeLahan: "Mangrove", target: 309, real2024: 189, real2025: 309, lama2024: 13465, lama2025: 570.45, baru2024: 13465.0, baru2025: 570.45, note: "*" },
+  { no: 1, ip: "Ditjen PDASRH", provinsi: "Jambi, Kalimantan Tengah", tipeLahan: "Gambut", target: 920, real2024: null, real2025: 1600, lama2024: 570.45, lama2025: 20678.42, baru2024: 570.45, baru2025: 20678.42 },
+  { no: 2, ip: "YBLL", provinsi: "NTT", tipeLahan: "Terestrial (Bambu)", target: 801.77, real2024: 20, real2025: 808.26, lama2024: 0.0005, lama2025: 0.04, baru2024: 0.19, baru2025: 14.8 },
+  { no: 2, ip: "YBLL", provinsi: "NTT", tipeLahan: "Terestrial (MPTS)", target: null, real2024: null, real2025: null, lama2024: 0.04, lama2025: 580.39, baru2024: 0.19, baru2025: 14.8 },
+  { no: 3, ip: "Ditjen PHL", provinsi: "Lampung, Kalimantan Selatan, Pekanbaru, dan 5 provinsi lainnya", tipeLahan: "Terestrial", target: 1035, real2024: null, real2025: 907, lama2024: null, lama2025: 976.91, baru2024: 0, baru2025: 38.2 },
+  { no: 4, ip: "Dishut Prov. Kalsel", provinsi: "Kalimantan Selatan", tipeLahan: "Terestrial", target: 305, real2024: null, real2025: 305, lama2024: 491, lama2025: 580.39, baru2024: 36.98, baru2025: 43.66 },
+  { no: 5, ip: "DLHK Prov. Riau", provinsi: "Riau", tipeLahan: "Gambut", target: 36, real2024: null, real2025: 36, lama2024: 0, lama2025: 14.09, baru2024: 0, baru2025: 14.09 },
+  { no: 6, ip: "Yayasan Paradigma", provinsi: "Riau", tipeLahan: "Mangrove", target: 100, real2024: null, real2025: null, lama2024: null, lama2025: null, baru2024: 17.25, baru2025: null },
+  { no: 6, ip: "Yayasan Paradigma", provinsi: "Riau", tipeLahan: "Gambut", target: 200, real2024: 100, real2025: null, lama2024: 26.51, lama2025: 17.25, baru2024: 6.89, baru2025: 17.25 },
+  { no: 7, ip: "Ditjen PSKL", provinsi: "Sulawesi Selatan, Sulawesi Barat, Bali, dan 3 provinsi lainnya", tipeLahan: "Terestrial", target: 827.59, real2024: 305, real2025: 827.59, lama2024: 549, lama2025: 549.29, baru2024: 41.32, baru2025: 41.32 },
+  { no: 8, ip: "TGC IPB", provinsi: "Jambi", tipeLahan: "Gambut", target: 4, real2024: null, real2025: 4, lama2024: 2.99, lama2025: 2.99, baru2024: 2.99, baru2025: 2.99 },
+  { no: 9, ip: "Dishut Prov. Kalbar", provinsi: "Kalimantan Barat", tipeLahan: "Terestrial", target: 138, real2024: 135, real2025: 40, lama2024: null, lama2025: 71, baru2024: 2.99, baru2025: 5.35 },
+  { no: 10, ip: "BP2SDM (Pusluh)", provinsi: "Jambi, Lampung, Jawa Barat", tipeLahan: "Terestrial", target: 18.42, real2024: 18, real2025: 44, lama2024: 19, lama2025: 19, baru2024: 1.43, baru2025: 1.43 },
+  { no: 10, ip: "BP2SDM (Pusluh)", provinsi: "Jambi, Lampung, Jawa Barat", tipeLahan: "Mangrove", target: 1, real2024: 1, real2025: 1, lama2024: 17, lama2025: 17, baru2024: 17.0, baru2025: 17.0 },
+  { no: 10, ip: "BP2SDM (PGLHK)", provinsi: "Jawa Barat, Sulawesi Selatan, dan 14 provinsi lainnya", tipeLahan: "Terestrial", target: 74.2, real2024: 74, real2025: 38.56, lama2024: 76, lama2025: 76, baru2024: 5.75, baru2025: 5.75 },
+  { no: 11, ip: "Dishut Prov. Sumbar", provinsi: "Sumatra Barat", tipeLahan: "Terestrial", target: 150, real2024: 150, real2025: 150, lama2024: 39, lama2025: 39, baru2024: 2.91, baru2025: 2.91 },
+  { no: 12, ip: "BNGi", provinsi: "Jawa Barat, Jambi, NTB", tipeLahan: "Terestrial", target: 6, real2024: 0, real2025: 6, lama2024: 32, lama2025: 32, baru2024: 2.38, baru2025: 2.38 },
+];
+
+const NC1_IP_TOTAL = {
+  target: 19006,
+  real2024: 8170,
+  real2025: 18699,
+  lama2024: 22159,
+  lama2025: 36814.2,
+  baru2024: 14687.65,
+  baru2025: 22277.68,
+};
 
 const NC1_METHOD_NOTE =
   "Perhitungan menggunakan persamaan AGB = 0,13868 \u00d7 (D\u00b2H)^0,67265 (Adinugroho et al., 2023), " +
@@ -486,43 +524,116 @@ function ProvinceBasemap({ highlightName }) {
   );
 }
 
+function titleCase(s) {
+  return String(s)
+    .toLowerCase()
+    .split(" ")
+    .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+// Real interactive map (Leaflet): satellite imagery basemap, real Indonesia
+// province boundaries (GeoJSON), zoom/pan, and clickable site markers.
+function LeafletMap({ sites, selected, setSelected }) {
+  const mapElRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerLayerRef = useRef(null);
+  const geoLayerRef = useRef(null);
+  const sitesRef = useRef(sites);
+  const setSelectedRef = useRef(setSelected);
+  sitesRef.current = sites;
+  setSelectedRef.current = setSelected;
+
+  // Init map once.
+  useEffect(() => {
+    if (mapRef.current || !mapElRef.current) return;
+    const map = L.map(mapElRef.current, {
+      center: [-2.3, 117.5],
+      zoom: 5,
+      minZoom: 4,
+      maxZoom: 18,
+      zoomControl: true,
+      scrollWheelZoom: true,
+    });
+    mapRef.current = map;
+
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri",
+      maxNativeZoom: 18,
+      maxZoom: 19,
+    }).addTo(map);
+
+    L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+      maxNativeZoom: 18,
+      maxZoom: 19,
+      opacity: 0.65,
+    }).addTo(map);
+
+    L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
+
+    fetch(`${import.meta.env.BASE_URL}indonesia_provinsi.geojson`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mapRef.current) return;
+        const layer = L.geoJSON(data, {
+          style: () => ({ color: "#EEF0E7", weight: 1, fillColor: "#2C4A3A", fillOpacity: 0.04 }),
+          onEachFeature: (feature, fLayer) => {
+            const name = titleCase(feature.properties.Propinsi || "");
+            fLayer.on({
+              mouseover: (e) => e.target.setStyle({ fillOpacity: 0.2, weight: 1.5, color: "#F5F3EA" }),
+              mouseout: (e) => geoLayerRef.current && geoLayerRef.current.resetStyle(e.target),
+            });
+            fLayer.bindTooltip(name, { sticky: true });
+          },
+        }).addTo(map);
+        geoLayerRef.current = layer;
+      })
+      .catch(() => {});
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Rebuild markers whenever the filtered site list or selection changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (markerLayerRef.current) {
+      markerLayerRef.current.remove();
+    }
+    const group = L.layerGroup();
+    sites.forEach((s) => {
+      const color = STATUS_META[s.status].color;
+      const active = selected?.id === s.id;
+      const marker = L.circleMarker([s.lat, s.lng], {
+        radius: active ? 11 : 7.5,
+        color,
+        weight: active ? 2.5 : 1.5,
+        fillColor: color,
+        fillOpacity: active ? 0.8 : 0.55,
+      });
+      marker.on("click", () => setSelectedRef.current(s));
+      marker.bindTooltip(s.name, { direction: "top", offset: [0, -8] });
+      marker.addTo(group);
+    });
+    group.addTo(map);
+    markerLayerRef.current = group;
+  }, [sites, selected]);
+
+  return <div ref={mapElRef} style={{ width: "100%", height: 480 }} />;
+}
+
 function SpatialView({ sites, selected, setSelected }) {
   return (
     <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
       <div style={{ flex: "1 1 62%", border: "1px solid #D6D2C4", borderRight: "none", background: "#EAEBDF", position: "relative" }}>
-        <div style={{ position: "absolute", top: 14, left: 18, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
-          Batas provinsi disederhanakan dari data GeoJSON &middot; luas AOI ditampilkan tidak berskala
+        <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
+          Peta interaktif &middot; scroll/tombol untuk zoom, seret untuk geser &middot; klik penanda untuk detail lokasi
         </div>
-        <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-          <ProvinceBasemap highlightName={selected?.provinsi} />
-
-          {sites.map((s) => {
-            const active = selected?.id === s.id;
-            const hw = aoiHalfWidth(s.luas) * (active ? 1.25 : 1);
-            const color = STATUS_META[s.status].color;
-            const flagged = s.status === "Overlap Terdeteksi" || s.status === "Di Luar RO";
-            return (
-              <g key={s.id} onClick={() => setSelected(s)} style={{ cursor: "pointer" }}>
-                {flagged && (
-                  <polygon
-                    points={squarePoints(s.cx, s.cy, hw * 1.5, -12)}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="1"
-                    strokeDasharray="2 2"
-                  />
-                )}
-                <polygon
-                  points={squarePoints(s.cx, s.cy, hw, 6)}
-                  fill={color}
-                  fillOpacity={active ? 0.55 : 0.35}
-                  stroke={color}
-                  strokeWidth={active ? 1.6 : 1}
-                />
-              </g>
-            );
-          })}
-        </svg>
+        <LeafletMap sites={sites} selected={selected} setSelected={setSelected} />
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 18px 16px", borderTop: "1px solid #D6D2C4" }}>
           {Object.entries(STATUS_META).map(([label, meta]) => (
@@ -578,6 +689,106 @@ function SpatialView({ sites, selected, setSelected }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// DUMMY data for NC-2&3 and NC-4, built in the exact same shape as the real
+// NC-1 report data above, so the Karbon tab can show a consistent format
+// across all three PMUs while only NC-1 is backed by the real report.
+// ---------------------------------------------------------------------------
+const NC23_REPORT_META = { title: "Ringkasan Peningkatan Cadangan Karbon NC-2&3 (dummy)", asOf: "data contoh" };
+const NC23_PLANTING = { targetHa: 12500, realisasi2024Ha: 5200, realisasi2025Ha: 11800, pctOfTarget: 94.4 };
+const NC23_METHOD_COMPARISON = [
+  { tahun: 2024, alometrikLama: 15400, adjustmentBaru: 9800 },
+  { tahun: 2025, alometrikLama: 26700, adjustmentBaru: 16950 },
+];
+const NC23_INTERVENTIONS = [
+  { key: "terestrial", label: "Penanaman RHL Terestrial", icon: TreePine, color: "#2C4A3A", estimasi: 6200, uncertaintyPct: 45, lower: 3410, upper: 8990, status: "Estimasi awal (dummy); perlu data diameter, tinggi, dan survival rate aktual." },
+  { key: "mangrove", label: "Mangrove", icon: Waves, color: "#2E6B6B", estimasi: 850, uncertaintyPct: 50, lower: 425, upper: 1275, status: "Estimasi awal (dummy); perlu pemisahan seedling/sapling dan monitoring substrat." },
+  { key: "gambut", label: "Gambut", icon: Droplets, color: "#8A6A2E", estimasi: 9500, uncertaintyPct: 60, lower: 3800, upper: 15200, status: "Estimasi awal (dummy) berisiko tinggi; perlu validasi hidrologi dan drainase." },
+  { key: "agroforestri", label: "Agroforestri & IP Lain", icon: Sprout, color: "#B9791F", estimasi: 400, uncertaintyPct: 50, lower: 200, upper: 600, status: "Estimasi awal (dummy); perlu pemisahan jenis tanaman dan data kelompok." },
+];
+const NC23_TOTAL = { estimasi: 16950, uncertaintyPct: 52.4, lower: 7835, upper: 26065 };
+const NC23_SURVIVAL = [
+  { label: "IP Borneo Asri (P0)", value: 82 },
+  { label: "IP Katingan Mitra (P0)", value: 68 },
+  { label: "Rehabilitasi mangrove (rata-rata)", value: 58 },
+];
+const NC23_IP_TABLE = [
+  { no: 1, ip: "IP Borneo Asri", provinsi: "Kalimantan Barat", tipeLahan: "Terestrial", target: 4500, real2024: 2100, real2025: 4150, lama2024: 5200, lama2025: 9800, baru2024: 3100, baru2025: 6200 },
+  { no: 2, ip: "IP Katingan Mitra", provinsi: "Kalimantan Tengah", tipeLahan: "Gambut", target: 6000, real2024: 2600, real2025: 5900, lama2024: 9200, lama2025: 14600, baru2024: 5700, baru2025: 9500 },
+  { no: 3, ip: "IP Kaltim Asri", provinsi: "Kalimantan Timur", tipeLahan: "Mangrove", target: 800, real2024: 350, real2025: 780, lama2024: 900, lama2025: 1550, baru2024: 550, baru2025: 850 },
+  { no: 4, ip: "IP Sulteng Mandiri", provinsi: "Sulawesi Tengah", tipeLahan: "Terestrial", target: 1200, real2024: 150, real2025: 970, lama2024: 1800, lama2025: 750, baru2024: 450, baru2025: 400 },
+];
+const NC23_IP_TOTAL = { target: 12500, real2024: 5200, real2025: 11800, lama2024: 17100, lama2025: 26700, baru2024: 9800, baru2025: 16950 };
+const NC23_METHOD_NOTE =
+  "Data ini bersifat dummy untuk keperluan demonstrasi antarmuka, disusun mengikuti format dan metodologi yang sama dengan " +
+  "adjustment alometrik NC-1 (Adinugroho et al., 2023). Belum merepresentasikan capaian aktual PMU NC-2&3.";
+
+const NC4_REPORT_META = { title: "Ringkasan Peningkatan Cadangan Karbon NC-4 (dummy)", asOf: "data contoh" };
+const NC4_PLANTING = { targetHa: 9800, realisasi2024Ha: 3100, realisasi2025Ha: 8700, pctOfTarget: 88.8 };
+const NC4_METHOD_COMPARISON = [
+  { tahun: 2024, alometrikLama: 9600, adjustmentBaru: 6100 },
+  { tahun: 2025, alometrikLama: 19800, adjustmentBaru: 12400 },
+];
+const NC4_INTERVENTIONS = [
+  { key: "terestrial", label: "Penanaman RHL Terestrial", icon: TreePine, color: "#2C4A3A", estimasi: 8900, uncertaintyPct: 45, lower: 4895, upper: 12905, status: "Estimasi awal (dummy); perlu data diameter, tinggi, dan survival rate aktual." },
+  { key: "mangrove", label: "Mangrove", icon: Waves, color: "#2E6B6B", estimasi: 2600, uncertaintyPct: 50, lower: 1300, upper: 3900, status: "Estimasi awal (dummy); perlu pemisahan seedling/sapling dan monitoring substrat." },
+  { key: "agroforestri", label: "Agroforestri & Masyarakat", icon: Sprout, color: "#B9791F", estimasi: 900, uncertaintyPct: 50, lower: 450, upper: 1350, status: "Estimasi awal (dummy); perlu pemisahan jenis tanaman dan data kelompok." },
+];
+const NC4_TOTAL = { estimasi: 12400, uncertaintyPct: 50.2, lower: 6645, upper: 18155 };
+const NC4_SURVIVAL = [
+  { label: "IP Papua Tumbuh (P0)", value: 71 },
+  { label: "IP Papua Barat Lestari (P0)", value: 66 },
+  { label: "Rehabilitasi mangrove (rata-rata)", value: 55 },
+];
+const NC4_IP_TABLE = [
+  { no: 1, ip: "IP Papua Tumbuh", provinsi: "Papua Selatan, Papua Tengah, Papua", tipeLahan: "Terestrial", target: 6200, real2024: 1900, real2025: 5600, lama2024: 6800, lama2025: 13600, baru2024: 4200, baru2025: 8900 },
+  { no: 2, ip: "IP Papua Tumbuh", provinsi: "Papua Tengah", tipeLahan: "Mangrove", target: 1500, real2024: 700, real2025: 1450, lama2024: 1900, lama2025: 3900, baru2024: 1200, baru2025: 2600 },
+  { no: 3, ip: "IP Papua Barat Lestari", provinsi: "Papua Barat Daya", tipeLahan: "Terestrial", target: 2100, real2024: 500, real2025: 1650, lama2024: 900, lama2025: 2300, baru2024: 700, baru2025: 900 },
+];
+const NC4_IP_TOTAL = { target: 9800, real2024: 3100, real2025: 8700, lama2024: 9600, lama2025: 19800, baru2024: 6100, baru2025: 12400 };
+const NC4_METHOD_NOTE =
+  "Data ini bersifat dummy untuk keperluan demonstrasi antarmuka, disusun mengikuti format dan metodologi yang sama dengan " +
+  "adjustment alometrik NC-1 (Adinugroho et al., 2023). Belum merepresentasikan capaian aktual PMU NC-4.";
+
+const REPORT_DATA = {
+  "NC-1": {
+    isDummy: false,
+    meta: NC1_REPORT_META,
+    planting: NC1_PLANTING,
+    methodComparison: NC1_METHOD_COMPARISON,
+    interventions: NC1_INTERVENTIONS,
+    total: NC1_TOTAL,
+    survival: NC1_SURVIVAL,
+    methodNote: NC1_METHOD_NOTE,
+    ipTable: NC1_IP_TABLE,
+    ipTotal: NC1_IP_TOTAL,
+  },
+  "NC-2&3": {
+    isDummy: true,
+    meta: NC23_REPORT_META,
+    planting: NC23_PLANTING,
+    methodComparison: NC23_METHOD_COMPARISON,
+    interventions: NC23_INTERVENTIONS,
+    total: NC23_TOTAL,
+    survival: NC23_SURVIVAL,
+    methodNote: NC23_METHOD_NOTE,
+    ipTable: NC23_IP_TABLE,
+    ipTotal: NC23_IP_TOTAL,
+  },
+  "NC-4": {
+    isDummy: true,
+    meta: NC4_REPORT_META,
+    planting: NC4_PLANTING,
+    methodComparison: NC4_METHOD_COMPARISON,
+    interventions: NC4_INTERVENTIONS,
+    total: NC4_TOTAL,
+    survival: NC4_SURVIVAL,
+    methodNote: NC4_METHOD_NOTE,
+    ipTable: NC4_IP_TABLE,
+    ipTotal: NC4_IP_TOTAL,
+  },
+};
+
 function UncertaintyRow({ item }) {
   const Icon = item.icon;
   const scaleMax = item.upper * 1.15;
@@ -611,21 +822,92 @@ function UncertaintyRow({ item }) {
 
 // Real (non-dummy) NC-1 carbon panel, sourced from Laporan Tahunan FOLU NC-1
 // TA 2025 \u2014 shown whenever the Karbon tab is scoped to PMU NC-1.
-function NC1CarbonPanel() {
-  const kenaikanPct = ((NC1_METHOD_COMPARISON[1].adjustmentBaru - NC1_METHOD_COMPARISON[0].adjustmentBaru) / NC1_METHOD_COMPARISON[0].adjustmentBaru) * 100;
+function IpTableRow({ row, isFirstOfGroup }) {
+  return (
+    <tr style={{ borderTop: "1px solid #E5E2D6" }}>
+      <td style={{ padding: "9px 14px", color: "#1B2A22", fontWeight: isFirstOfGroup ? 600 : 400 }}>{isFirstOfGroup ? row.ip : ""}</td>
+      <td style={{ padding: "9px 14px", color: "#8A8677", fontSize: 11.5 }}>{isFirstOfGroup ? row.provinsi : ""}</td>
+      <td style={{ padding: "9px 14px", color: "#5C5A4E" }}>{row.tipeLahan}</td>
+      <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{row.target != null ? fmt1(row.target) : "\u2013"}</td>
+      <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{row.real2024 != null ? fmt1(row.real2024) : "\u2013"}</td>
+      <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{row.real2025 != null ? fmt1(row.real2025) : "\u2013"}</td>
+      <td style={{ padding: "9px 14px", color: "#2C4A3A", fontWeight: 500, textAlign: "right" }}>
+        {row.baru2025 != null ? fmt1(row.baru2025) : "\u2013"}
+        {row.note ? <span style={{ color: "#B9791F" }}>{row.note}</span> : null}
+      </td>
+    </tr>
+  );
+}
+
+function IpTablePanel({ ipTable, ipTotal, hasNote }) {
+  return (
+    <div style={{ marginTop: 18 }}>
+      <SectionTitle>Rincian per implementing partner (Tabel 6.9)</SectionTitle>
+      <div style={{ border: "1px solid #D6D2C4", overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, minWidth: 640 }}>
+          <thead>
+            <tr>
+              {["Implementing Partner", "Provinsi", "Tipe Lahan", "Target (ha)", "Realisasi 2024 (ha)", "Realisasi 2025 (ha)", `Adjustment 2025 (${CO2E})`].map((h) => (
+                <th key={h} style={{ textAlign: h.includes("Partner") || h.includes("Provinsi") || h.includes("Tipe") ? "left" : "right", padding: "9px 14px", color: "#5C5A4E", fontWeight: 500, fontSize: 11.5, borderBottom: "1px solid #D6D2C4" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ipTable.map((row, i) => (
+              <IpTableRow key={`${row.no}-${row.tipeLahan}-${i}`} row={row} isFirstOfGroup={i === 0 || ipTable[i - 1].ip !== row.ip} />
+            ))}
+            <tr style={{ borderTop: "1px solid #D6D2C4", background: "#EDEAD9" }}>
+              <td colSpan={3} style={{ padding: "9px 14px", color: "#1B2A22", fontWeight: 600 }}>Total</td>
+              <td style={{ padding: "9px 14px", color: "#1B2A22", fontWeight: 600, textAlign: "right" }}>{fmt1(ipTotal.target)}</td>
+              <td style={{ padding: "9px 14px", color: "#1B2A22", fontWeight: 600, textAlign: "right" }}>{fmt1(ipTotal.real2024)}</td>
+              <td style={{ padding: "9px 14px", color: "#1B2A22", fontWeight: 600, textAlign: "right" }}>{fmt1(ipTotal.real2025)}</td>
+              <td style={{ padding: "9px 14px", color: "#2C4A3A", fontWeight: 600, textAlign: "right" }}>{fmt1(ipTotal.baru2025)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {hasNote && (
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 6 }}>
+          * Sel Mangrove Ditjen PDASRH pada tabel sumber menampilkan nilai Alometrik Lama dan Adjustment Baru tahun 2024 yang sama
+          (13.465); ditampilkan apa adanya mengikuti dokumen sumber.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Prop-driven carbon report panel. Used for NC-1 (real data from the annual
+// report) and, with dummy data in the same shape, for NC-2&3 and NC-4.
+function ReportCarbonPanel({ data }) {
+  const { meta, planting, methodComparison, interventions, total, survival, methodNote, ipTable, ipTotal, isDummy } = data;
+  const before = methodComparison[0];
+  const after = methodComparison[methodComparison.length - 1];
+  const kenaikanPct = ((after.adjustmentBaru - before.adjustmentBaru) / before.adjustmentBaru) * 100;
+  const hasNote = ipTable.some((r) => r.note);
   return (
     <div>
-      <Note tone="neutral">
-        Data pada panel ini bersumber dari <strong>{NC1_REPORT_META.title}</strong> (per {NC1_REPORT_META.asOf}), bukan data dummy.
-        Filter IP/Status di atas tidak berlaku untuk panel ini karena laporan sumber melaporkan pada level implementing partner,
-        bukan titik lokasi individual.
+      <Note tone={isDummy ? "warn" : "neutral"}>
+        {isDummy ? (
+          <>
+            Data pada panel ini adalah <strong>data dummy</strong> ({meta.asOf}), disusun dalam format yang sama dengan panel NC-1
+            untuk keperluan demonstrasi antarmuka.
+          </>
+        ) : (
+          <>
+            Data pada panel ini bersumber dari <strong>{meta.title}</strong> (per {meta.asOf}), bukan data dummy.
+          </>
+        )}
+        {" "}Filter IP/Status di atas tidak berlaku untuk panel ini karena data dilaporkan pada level implementing partner, bukan
+        titik lokasi individual.
       </Note>
 
       <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginTop: 16 }}>
         {[
-          { label: "Realisasi tanam 2025", value: fmt(NC1_PLANTING.realisasi2025Ha), unit: "ha" },
-          { label: "% dari target", value: `${NC1_PLANTING.pctOfTarget}%`, unit: `dari ${fmt(NC1_PLANTING.targetHa)} ha` },
-          { label: "Potensi karbon 2025 (adjustment)", value: fmt1(NC1_TOTAL.estimasi), unit: "tCO\u2082e", accent: true },
+          { label: "Realisasi tanam 2025", value: fmt(planting.realisasi2025Ha), unit: "ha" },
+          { label: "% dari target", value: `${planting.pctOfTarget}%`, unit: `dari ${fmt(planting.targetHa)} ha` },
+          { label: "Potensi karbon 2025 (adjustment)", value: fmt1(total.estimasi), unit: CO2E, accent: true },
           { label: "Kenaikan vs. 2024", value: `+${kenaikanPct.toFixed(1)}%`, unit: "adjustment baru" },
         ].map((it, i) => (
           <div key={it.label} style={{ flex: "1 1 190px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
@@ -641,16 +923,15 @@ function NC1CarbonPanel() {
       <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 0 }}>
         <SectionTitle>Alometrik lama vs. adjustment alometrik baru</SectionTitle>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677", marginTop: -8, marginBottom: 8 }}>
-          Adjustment menggunakan persamaan untuk tanaman muda (Adinugroho et al., 2023), mengoreksi estimasi 2025 dari{" "}
-          {fmt1(NC1_METHOD_COMPARISON[1].alometrikLama)} menjadi {fmt1(NC1_METHOD_COMPARISON[1].adjustmentBaru)} {CO2E} agar tidak overclaim
-          biomassa tanaman muda.
+          Adjustment menggunakan persamaan untuk tanaman muda (Adinugroho et al., 2023), mengoreksi estimasi {after.tahun} dari{" "}
+          {fmt1(after.alometrikLama)} menjadi {fmt1(after.adjustmentBaru)} {CO2E} agar tidak overclaim biomassa tanaman muda.
         </div>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={NC1_METHOD_COMPARISON} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <BarChart data={methodComparison} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
             <XAxis dataKey="tahun" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
             <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={60} />
-            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} tCO\u2082e`} />
+            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${CO2E}`} />
             <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
             <Bar dataKey="alometrikLama" name="Alometrik lama" fill="#8A8677" />
             <Bar dataKey="adjustmentBaru" name="Adjustment baru" fill="#2C4A3A" />
@@ -659,30 +940,31 @@ function NC1CarbonPanel() {
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <SectionTitle>Estimasi & rentang uncertainty per jenis intervensi (2025)</SectionTitle>
+        <SectionTitle>Estimasi & rentang uncertainty per jenis intervensi ({after.tahun})</SectionTitle>
         <div style={{ border: "1px solid #D6D2C4" }}>
-          {NC1_INTERVENTIONS.map((item) => (
+          {interventions.map((item) => (
             <UncertaintyRow key={item.key} item={item} />
           ))}
           <div style={{ padding: "14px 18px", borderTop: "1px solid #D6D2C4", background: "#EDEAD9" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Total Bidang II</span>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Total</span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
-                {fmt1(NC1_TOTAL.estimasi)} {CO2E} <span style={{ color: "#8A8677", fontWeight: 400 }}>({"\u00b1"}{NC1_TOTAL.uncertaintyPct}% indikatif)</span>
+                {fmt1(total.estimasi)} {CO2E} <span style={{ color: "#8A8677", fontWeight: 400 }}>({"\u00b1"}{total.uncertaintyPct}% indikatif)</span>
               </span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginTop: 4 }}>
-              Rentang {fmt1(NC1_TOTAL.lower)}{"\u2013"}{fmt1(NC1_TOTAL.upper)} {CO2E}. Estimasi awal berbasis activity data dan adjustment alometrik;
-              belum menjadi klaim karbon final.
+              Rentang {fmt1(total.lower)}{"\u2013"}{fmt1(total.upper)} {CO2E}. Estimasi awal; belum menjadi klaim karbon final.
             </div>
           </div>
         </div>
       </div>
 
+      <IpTablePanel ipTable={ipTable} ipTotal={ipTotal} hasNote={hasNote} />
+
       <div style={{ marginTop: 18 }}>
         <SectionTitle>Survival rate yang dilaporkan</SectionTitle>
         <div style={{ border: "1px solid #D6D2C4" }}>
-          {NC1_SURVIVAL.map((s, i) => (
+          {survival.map((s, i) => (
             <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1B2A22" }}>{s.label}</span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: s.value < 70 ? "#B9791F" : "#2C4A3A" }}>{s.value}%</span>
@@ -693,15 +975,15 @@ function NC1CarbonPanel() {
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid #D6D2C4", padding: "14px 18px" }}>
         <FileText size={16} color="#5C5A4E" style={{ flex: "none", marginTop: 2 }} />
-        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", lineHeight: 1.6 }}>{NC1_METHOD_NOTE}</div>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", lineHeight: 1.6 }}>{methodNote}</div>
       </div>
     </div>
   );
 }
 
 function CarbonView({ sites, pmuFilter }) {
-  if (pmuFilter === "NC-1") {
-    return <NC1CarbonPanel />;
+  if (REPORT_DATA[pmuFilter]) {
+    return <ReportCarbonPanel data={REPORT_DATA[pmuFilter]} />;
   }
 
   const byPmuJenis = useMemo(() => {
@@ -1130,7 +1412,7 @@ export default function App() {
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
           {tab === "peta" || tab === "karbon"
-            ? "Batas provinsi bersumber dari data GeoJSON yang diberikan (disederhanakan untuk tampilan). Lokasi, IP, AOI, dan angka capaian/karbon pada dashboard ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program."
+            ? "Peta dasar dan batas provinsi bersumber dari data geografis riil (citra satelit Esri & GeoJSON provinsi Indonesia) sehingga dapat di-zoom dan digeser. Namun lokasi AOI, IP, dan angka capaian/karbon pada peta ini tetap data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program."
             : "Seluruh angka baseline, capaian aktual, dan pengurangan emisi pada halaman ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka. Belum merepresentasikan capaian aktual program."}
         </div>
       </div>
