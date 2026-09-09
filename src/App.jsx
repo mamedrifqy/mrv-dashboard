@@ -387,6 +387,71 @@ const NC1_AOI_FEATURES = (() => {
   });
 })();
 
+// ---------------------------------------------------------------------------
+// Dummy "kelompok/petak" (KTH-style groups) per implementing-partner row,
+// mirroring the drill-down style of the PRM Riau reference dashboard:
+// group name, desa/kecamatan, luas, and monev progress bars. This layer is
+// entirely illustrative (not present in the annual report), generated with a
+// seeded RNG so it's stable across renders/deploys rather than random noise.
+// ---------------------------------------------------------------------------
+function seededRandom(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+const DUMMY_DESA = ["Sukamaju", "Tanjung Harapan", "Bumi Asri", "Sido Mulyo", "Karya Bakti", "Rawa Indah", "Mekar Sari", "Sumber Rejeki", "Tirta Kencana", "Bukit Damai"];
+const DUMMY_KECAMATAN = ["Kec. Hulu", "Kec. Hilir", "Kec. Tengah", "Kec. Pesisir", "Kec. Dataran Tinggi"];
+const MONEV_LABELS_BY_TIPE = {
+  Terestrial: ["Survival Rate Tanam", "Pertumbuhan Diameter"],
+  "Terestrial (Bambu)": ["Survival Rate Rumpun", "Pertambahan Jumlah Culm"],
+  "Terestrial (MPTS)": ["Survival Rate Tanam", "Produktivitas Tanaman"],
+  Mangrove: ["Survival Rate Mangrove", "Kerapatan Tegakan"],
+  Gambut: ["Survival Rate Tanam", "Tinggi Muka Air Gambut"],
+};
+const STATUS_PETAK = ["P0 Selesai", "Lanjut P1", "Lanjut P2", "Perlu Penyulaman"];
+
+function generatePetaks(row, index) {
+  const rand = seededRandom(1000 + index * 37);
+  const n = 2 + Math.floor(rand() * 3);
+  const totalHa = row.real2025 || row.target || 20;
+  const labels = MONEV_LABELS_BY_TIPE[row.tipeLahan] || MONEV_LABELS_BY_TIPE.Terestrial;
+  let remaining = totalHa;
+  const petaks = [];
+  for (let i = 0; i < n; i++) {
+    const isLast = i === n - 1;
+    const raw = (totalHa / n) * (0.6 + rand() * 0.8);
+    const luas = isLast ? Math.max(0.5, remaining) : Math.min(raw, Math.max(0.5, remaining - (n - i - 1) * 0.5));
+    remaining -= luas;
+    const desa = DUMMY_DESA[Math.floor(rand() * DUMMY_DESA.length)];
+    const kecamatan = DUMMY_KECAMATAN[Math.floor(rand() * DUMMY_KECAMATAN.length)];
+    const status = STATUS_PETAK[Math.floor(rand() * STATUS_PETAK.length)];
+    const monev = labels.map((label) => {
+      const ambang = 50 + Math.floor(rand() * 15);
+      const pct = Math.round((ambang + rand() * 35) * 10) / 10;
+      return { label, ambang, pct };
+    });
+    petaks.push({
+      id: `${row.ip}-${row.tipeLahan}-${i}`.replace(/\s+/g, "_"),
+      kelompok: `KTH ${row.ip.replace(/^Ditjen |^Dishut Prov\.? |^DLHK Prov\.? /g, "")} ${desa} ${i + 1}`,
+      desa,
+      kecamatan,
+      luas: Math.round(Math.max(0.5, luas) * 10) / 10,
+      status,
+      monev,
+    });
+  }
+  return petaks;
+}
+
+const NC1_PETAK_BY_ROW = {};
+NC1_IP_TABLE.forEach((row, i) => {
+  NC1_PETAK_BY_ROW[`${row.ip}__${row.tipeLahan}`] = generatePetaks(row, i);
+});
+
 const NC1_METHOD_NOTE =
   "Perhitungan menggunakan persamaan AGB = 0,13868 \u00d7 (D\u00b2H)^0,67265 (Adinugroho et al., 2023), " +
   "dikembangkan untuk tanaman kecil berdiameter <5 cm agar tidak overestimate biomassa tanaman muda. " +
@@ -645,6 +710,16 @@ function ProvinceBasemap({ highlightName }) {
   );
 }
 
+function useIsNarrow(breakpoint = 780) {
+  const [narrow, setNarrow] = useState(typeof window !== "undefined" ? window.innerWidth < breakpoint : false);
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return narrow;
+}
+
 function titleCase(s) {
   return String(s)
     .toLowerCase()
@@ -655,7 +730,7 @@ function titleCase(s) {
 
 // Real interactive map (Leaflet): satellite imagery basemap, real Indonesia
 // province boundaries (GeoJSON), zoom/pan, and clickable site markers.
-function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, setSelectedAoi }) {
+function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, setSelectedAoi, height }) {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
@@ -678,19 +753,22 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
       maxZoom: 18,
       zoomControl: true,
       scrollWheelZoom: true,
+      tap: true,
+      inertia: true,
+      zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
+      wheelPxPerZoomLevel: 90,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5,
     });
     mapRef.current = map;
 
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      attribution: "Tiles &copy; Esri",
-      maxNativeZoom: 18,
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: "abc",
+      maxNativeZoom: 19,
       maxZoom: 19,
-    }).addTo(map);
-
-    L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
-      maxNativeZoom: 18,
-      maxZoom: 19,
-      opacity: 0.65,
     }).addTo(map);
 
     L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
@@ -823,10 +901,48 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
     }
   }, [aoiFeatures, selectedAoi]);
 
-  return <div ref={mapElRef} style={{ width: "100%", height: 480 }} />;
+  return <div ref={mapElRef} style={{ width: "100%", height: height || 480 }} />;
+}
+
+function MonevBar({ label, pct, ambang }) {
+  const color = pct >= ambang ? "#2C4A3A" : "#B9791F";
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 3 }}>
+        <span>{label}</span>
+        <span style={{ color: "#8A8677" }}>Ambang {ambang}%</span>
+      </div>
+      <div style={{ position: "relative", height: 8, background: "#EDEAD9" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.min(100, pct)}%`, background: color }} />
+        <div style={{ position: "absolute", left: `${ambang}%`, top: -2, bottom: -2, width: 1.5, background: "#8A6A2E" }} />
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginTop: 3 }}>
+        {pct}% <span style={{ fontWeight: 400, fontSize: 11, color: pct >= ambang ? "#2C4A3A" : "#B9791F" }}>{pct >= ambang ? `+${(pct - ambang).toFixed(1)}% dari ambang` : `${(pct - ambang).toFixed(1)}% dari ambang`}</span>
+      </div>
+    </div>
+  );
+}
+
+function PetakCard({ petak }) {
+  return (
+    <div style={{ border: "1px solid #D6D2C4", padding: "12px 14px", marginBottom: 10, background: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+        <div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13, color: "#1B2A22" }}>{petak.kelompok}</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677" }}>{petak.kecamatan} &middot; {petak.desa}</div>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 10.5, color: "#2C4A3A", background: "#EDEAD9", padding: "2px 7px", flex: "none" }}>{petak.status}</span>
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 8 }}>Luas petak: {fmt1(petak.luas)} ha</div>
+      {petak.monev.map((m) => (
+        <MonevBar key={m.label} label={m.label} pct={m.pct} ambang={m.ambang} />
+      ))}
+    </div>
+  );
 }
 
 function AoiListItem({ row, active, onClick }) {
+  const petakCount = (NC1_PETAK_BY_ROW[`${row.ip}__${row.tipeLahan}`] || []).length;
   return (
     <div
       onClick={onClick}
@@ -837,9 +953,12 @@ function AoiListItem({ row, active, onClick }) {
         background: active ? "#1B2A22" : "transparent",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: NC1_TIPE_COLOR[row.tipeLahan] || "#2C4A3A", flex: "none" }} />
-        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 600, color: active ? "#EEF0E7" : "#1B2A22" }}>{row.ip}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 7, marginBottom: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: NC1_TIPE_COLOR[row.tipeLahan] || "#2C4A3A", flex: "none" }} />
+          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 600, color: active ? "#EEF0E7" : "#1B2A22", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.ip}</span>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 10.5, color: active ? "#B7BBA8" : "#8A8677", flex: "none" }}>{petakCount} petak</span>
       </div>
       <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: active ? "#B7BBA8" : "#8A8677", marginLeft: 15 }}>
         {row.tipeLahan} &middot; {row.provinsi.split(",")[0]}
@@ -852,6 +971,8 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   const [nc1Search, setNc1Search] = useState("");
   const [nc1Selected, setNc1Selected] = useState(null);
   const isNc1 = pmuFilter === "NC-1";
+  const isNarrow = useIsNarrow();
+  const mapHeight = isNarrow ? 300 : 480;
 
   const nc1Rows = useMemo(() => {
     let rows = NC1_IP_TABLE;
@@ -870,8 +991,8 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
 
   if (isNc1) {
     return (
-      <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-        <div style={{ flex: "0 0 240px", border: "1px solid #D6D2C4", borderRight: "none", background: "#F5F3EA", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
+        <div style={{ flex: isNarrow ? "1 1 auto" : "0 0 240px", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", borderBottom: isNarrow ? "none" : undefined, background: "#F5F3EA", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: 12, borderBottom: "1px solid #D6D2C4" }}>
             <input
               value={nc1Search}
@@ -907,11 +1028,11 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
           </div>
         </div>
 
-        <div style={{ flex: "1 1 40%", border: "1px solid #D6D2C4", borderRight: "none", background: "#EAEBDF", position: "relative" }}>
+        <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 40%", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", background: "#EAEBDF", position: "relative" }}>
           <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
             Lokasi AOI berbentuk dummy (bentuk poligon contoh) &middot; posisi berbasis provinsi riil dari Tabel 6.9
           </div>
-          <LeafletMap sites={[]} aoiFeatures={nc1Features} selectedAoi={nc1Selected} setSelectedAoi={setNc1Selected} />
+          <LeafletMap sites={[]} aoiFeatures={nc1Features} selectedAoi={nc1Selected} setSelectedAoi={setNc1Selected} height={mapHeight} />
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 18px 16px", borderTop: "1px solid #D6D2C4" }}>
             {Object.entries(NC1_TIPE_COLOR).map(([label, color]) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
@@ -922,7 +1043,7 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
           </div>
         </div>
 
-        <div style={{ flex: "1 1 30%", border: "1px solid #D6D2C4", padding: 22, background: "#F5F3EA", minHeight: 300, maxHeight: 640, overflowY: "auto" }}>
+        <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 30%", border: "1px solid #D6D2C4", padding: 22, background: "#F5F3EA", minHeight: 300, maxHeight: isNarrow ? "none" : 640, overflowY: "auto" }}>
           {!nc1Selected ? (
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#5C5A4E", fontSize: 13.5, lineHeight: 1.6 }}>
               Pilih salah satu implementing partner dari daftar atau klik AOI pada peta untuk melihat rinciannya (data riil dari Tabel 6.9).
@@ -946,9 +1067,23 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
                 <Field label="Adjustment karbon 2025" value={nc1Selected.baru2025 != null ? `${fmt1(nc1Selected.baru2025)} ${CO2E}` : "\u2013"} />
               </div>
 
+              <div style={{ marginTop: 22 }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginBottom: 4 }}>
+                  Kelompok / petak (contoh)
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginBottom: 10 }}>
+                  Rincian kelompok tani, desa, dan progres monev di bawah ini bersifat ilustratif (dummy) &mdash; laporan sumber
+                  hanya melaporkan sampai level implementing partner.
+                </div>
+                {(NC1_PETAK_BY_ROW[`${nc1Selected.ip}__${nc1Selected.tipeLahan}`] || []).map((petak) => (
+                  <PetakCard key={petak.id} petak={petak} />
+                ))}
+              </div>
+
               <Note tone="neutral">
-                Data ini bersumber dari Tabel 6.9, Laporan Tahunan FOLU NC-1 TA 2025. Bentuk dan posisi persis poligon AOI pada
-                peta adalah ilustrasi (dummy) karena laporan sumber tidak menyertakan geometri spasial.
+                Data target/realisasi/karbon di atas bersumber dari Tabel 6.9, Laporan Tahunan FOLU NC-1 TA 2025. Bentuk poligon
+                AOI pada peta dan rincian kelompok/petak adalah ilustrasi (dummy) karena laporan sumber tidak menyertakan
+                geometri spasial maupun data sampai level kelompok.
               </Note>
             </div>
           )}
@@ -958,12 +1093,12 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   }
 
   return (
-    <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-      <div style={{ flex: "1 1 62%", border: "1px solid #D6D2C4", borderRight: "none", background: "#EAEBDF", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
+      <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 62%", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", background: "#EAEBDF", position: "relative" }}>
         <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
           Peta interaktif &middot; scroll/tombol untuk zoom, seret untuk geser &middot; klik penanda untuk detail lokasi
         </div>
-        <LeafletMap sites={sites} selected={selected} setSelected={setSelected} />
+        <LeafletMap sites={sites} selected={selected} setSelected={setSelected} height={mapHeight} />
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 18px 16px", borderTop: "1px solid #D6D2C4" }}>
           {Object.entries(STATUS_META).map(([label, meta]) => (
@@ -975,7 +1110,7 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
         </div>
       </div>
 
-      <div style={{ flex: "1 1 38%", border: "1px solid #D6D2C4", padding: 22, background: "#F5F3EA", minHeight: 300, maxHeight: 640, overflowY: "auto" }}>
+      <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 38%", border: "1px solid #D6D2C4", padding: 22, background: "#F5F3EA", minHeight: 300, maxHeight: isNarrow ? "none" : 640, overflowY: "auto" }}>
         {!selected ? (
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#5C5A4E", fontSize: 13.5, lineHeight: 1.6 }}>
             Klik salah satu AOI pada peta untuk melihat detail lokasi, status verifikasi, dan keterkaitan datanya dengan Rencana Operasional.
@@ -1118,6 +1253,36 @@ const REPORT_DATA = {
     ipTotal: NC4_IP_TOTAL,
   },
 };
+
+// ---------------------------------------------------------------------------
+// Combined implementing-partner rows across all three PMUs (NC-1 real,
+// NC-2&3/NC-4 dummy but same shape), used by the "Semua PMU" aggregate view
+// in the Karbon tab so it's built from the same 5-category structure as the
+// per-PMU report panels, filterable by Implementing Partner (IP).
+// ---------------------------------------------------------------------------
+const ALL_IP_ROWS = [
+  ...NC1_IP_TABLE.map((r) => ({ ...r, pmu: "NC-1" })),
+  ...NC23_IP_TABLE.map((r) => ({ ...r, pmu: "NC-2&3" })),
+  ...NC4_IP_TABLE.map((r) => ({ ...r, pmu: "NC-4" })),
+];
+
+const KARBON_CATEGORIES = [
+  { key: "Terestrial", color: "#2C4A3A" },
+  { key: "Mangrove", color: "#2E6B6B" },
+  { key: "Gambut", color: "#8A6A2E" },
+  { key: "Bambu", color: "#5B4A7A" },
+  { key: "Agroforestri/MPTS", color: "#B9791F" },
+];
+
+function tipeLahanToCategory(tipeLahan) {
+  const t = String(tipeLahan);
+  if (t.includes("Bambu")) return "Bambu";
+  if (t.includes("MPTS") || t.toLowerCase().includes("agroforestri")) return "Agroforestri/MPTS";
+  if (t.startsWith("Terestrial")) return "Terestrial";
+  if (t === "Mangrove") return "Mangrove";
+  if (t === "Gambut") return "Gambut";
+  return "Terestrial";
+}
 
 function UncertaintyRow({ item }) {
   const Icon = item.icon;
@@ -1312,65 +1477,73 @@ function ReportCarbonPanel({ data }) {
 }
 
 function CarbonView({ sites, pmuFilter }) {
+  const [ipSel, setIpSel] = useState("Semua");
+
   if (REPORT_DATA[pmuFilter]) {
     return <ReportCarbonPanel data={REPORT_DATA[pmuFilter]} />;
   }
 
-  const byPmuJenis = useMemo(() => {
-    return Object.keys(PMU_META).map((pmu) => {
-      const row = { pmu: PMU_META[pmu].label };
-      Object.keys(JENIS_META).forEach((j) => {
-        row[j] = sites.filter((s) => s.pmu === pmu && s.jenisPck === j).reduce((a, s) => a + s.pck, 0);
-      });
-      return row;
-    });
-  }, [sites]);
+  const ipList = ["Semua", ...Array.from(new Set(ALL_IP_ROWS.map((r) => r.ip))).sort()];
 
-  const byJenisTotal = Object.keys(JENIS_META).map((j) => ({
-    jenis: j,
-    total: sites.filter((s) => s.jenisPck === j).reduce((a, s) => a + s.pck, 0),
+  const rows = ipSel === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.ip === ipSel);
+
+  const byPmuCategory = Object.keys(PMU_META).map((pmu) => {
+    const row = { pmu: PMU_META[pmu].label };
+    KARBON_CATEGORIES.forEach((c) => {
+      row[c.key] = rows.filter((r) => r.pmu === pmu && tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2025 || 0), 0);
+    });
+    return row;
+  });
+
+  const categoryTotals = KARBON_CATEGORIES.map((c) => ({
+    ...c,
+    total: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2025 || 0), 0),
   }));
-  const grandTotal = byJenisTotal.reduce((a, r) => a + r.total, 0);
+  const grandTotal = categoryTotals.reduce((a, r) => a + r.total, 0);
 
   return (
     <div>
-      <Note tone="warn">
-        Ringkasan di bawah ini dihitung dari 14 lokasi contoh (dummy) dan berbeda dari angka resmi pada panel per-PMU (pilih PMU
-        di atas untuk melihatnya). Untuk NC-1, angka resmi dari laporan tahunan adalah <strong>22.277,68 {CO2E}</strong> (2025) &mdash;
-        bukan angka pada chart di bawah.
+      <Note tone="neutral">
+        Ringkasan ini disusun dari data per implementing partner (IP) dan dikelompokkan ke 5 jenis intervensi yang sama seperti
+        laporan resmi NC-1. Untuk NC-1, angka di sini konsisten dengan panel per-PMU (adjustment 2025); untuk NC-2&3 dan NC-4,
+        angkanya masih <strong>data dummy</strong>.
       </Note>
-      <div style={{ display: "flex", gap: 0, border: "1px solid #D6D2C4", borderBottom: "none", marginTop: 16 }}>
-        {byJenisTotal.map((r, i) => {
-          const Icon = JENIS_META[r.jenis].icon;
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Filter Implementing Partner (IP)</span>
+        <Select label="IP" value={ipSel} onChange={setIpSel} options={ipList} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", borderBottom: "none" }}>
+        {categoryTotals.map((r, i) => {
           const pct = grandTotal ? Math.round((r.total / grandTotal) * 100) : 0;
           return (
-            <div key={r.jenis} style={{ flex: 1, padding: "18px 22px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <Icon size={16} color={JENIS_META[r.jenis].color} strokeWidth={2} />
-                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E" }}>PCK {r.jenis}</span>
+            <div key={r.key} style={{ flex: "1 1 150px", padding: "16px 18px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                <span style={{ width: 9, height: 9, background: r.color, display: "inline-block" }} />
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>{r.key}</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 24, color: "#1B2A22" }}>
-                {fmt(r.total)}
-                <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>{CO2E}</span>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 20, color: "#1B2A22" }}>
+                {fmt1(r.total)}
+                <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{CO2E}</span>
               </div>
-
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", marginTop: 3 }}>{pct}% dari total cadangan</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677", marginTop: 2 }}>{pct}% dari total</div>
             </div>
           );
         })}
       </div>
 
       <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px 10px" }}>
-        <SectionTitle>Cadangan karbon per PMU, menurut jenis PCK</SectionTitle>
+        <SectionTitle>Potensi karbon 2025 per PMU, menurut jenis intervensi</SectionTitle>
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={byPmuJenis} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <BarChart data={byPmuCategory} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
             <XAxis dataKey="pmu" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
-            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={50} />
-            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt(v)} tCO\u2082e`} />
+            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={55} />
+            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${CO2E}`} />
             <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
-            {Object.keys(JENIS_META).map((j) => (
-              <Bar key={j} dataKey={j} stackId="a" fill={JENIS_META[j].color} radius={[0, 0, 0, 0]} />
+            {KARBON_CATEGORIES.map((c) => (
+              <Bar key={c.key} dataKey={c.key} stackId="a" fill={c.color} radius={[0, 0, 0, 0]} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -1394,36 +1567,18 @@ function CarbonView({ sites, pmuFilter }) {
         </ResponsiveContainer>
       </div>
 
-      <div style={{ border: "1px solid #D6D2C4", borderTop: "none" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #D6D2C4" }}>
-              {["Lokasi", "PMU", "IP", "Jenis PCK", "Luas (ha)", "Cadangan (tCO\u2082e)", "Status"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 16px", color: "#5C5A4E", fontWeight: 500, fontSize: 12 }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sites
-              .slice()
-              .sort((a, b) => b.pck - a.pck)
-              .map((s) => (
-                <tr key={s.id} style={{ borderBottom: "1px solid #E5E2D6" }}>
-                  <td style={{ padding: "10px 16px", color: "#1B2A22" }}>{s.name}</td>
-                  <td style={{ padding: "10px 16px", color: PMU_META[s.pmu].color }}>{s.pmu}</td>
-                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{s.ip}</td>
-                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{s.jenisPck}</td>
-                  <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt(s.luas)}</td>
-                  <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 500 }}>{fmt(s.pck)}</td>
-                  <td style={{ padding: "10px 16px" }}>
-                    <StatusBadge status={s.status} />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      <div style={{ marginTop: 18 }}>
+        <SectionTitle>Rincian per implementing partner</SectionTitle>
+        <IpTablePanel
+          ipTable={rows}
+          ipTotal={{
+            target: rows.reduce((a, r) => a + (r.target || 0), 0),
+            real2024: rows.reduce((a, r) => a + (r.real2024 || 0), 0),
+            real2025: rows.reduce((a, r) => a + (r.real2025 || 0), 0),
+            baru2025: rows.reduce((a, r) => a + (r.baru2025 || 0), 0),
+          }}
+          hasNote={false}
+        />
       </div>
     </div>
   );
@@ -1700,7 +1855,7 @@ export default function App() {
             <span style={{ fontFamily: "'Source Serif 4', serif", fontSize: 19 }}>Dashboard MRV</span>
             <span style={{ fontSize: 12.5, color: "#B7BBA8" }}>Indonesia's FOLU Net Sink 2030</span>
           </div>
-          <div style={{ display: "flex", gap: 22 }}>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", rowGap: 8 }}>
             {[
               ["beranda", "Beranda"],
               ["pengukuran", "Pengukuran"],
