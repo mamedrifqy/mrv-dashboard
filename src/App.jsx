@@ -3,6 +3,7 @@ import L from "leaflet";
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -968,126 +969,86 @@ function AoiListItem({ row, active, onClick }) {
 }
 
 function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
-  const [nc1Search, setNc1Search] = useState("");
-  const [nc1Selected, setNc1Selected] = useState(null);
   const isNc1 = pmuFilter === "NC-1";
   const isNarrow = useIsNarrow();
-  const mapHeight = isNarrow ? 300 : 480;
+  const mapHeight = isNarrow ? 320 : 480;
 
-  const nc1Rows = useMemo(() => {
-    let rows = NC1_IP_TABLE;
-    if (ipFilter && ipFilter !== "Semua") rows = rows.filter((r) => r.ip === ipFilter);
-    if (nc1Search.trim()) {
-      const q = nc1Search.trim().toLowerCase();
-      rows = rows.filter((r) => r.ip.toLowerCase().includes(q) || r.provinsi.toLowerCase().includes(q) || r.tipeLahan.toLowerCase().includes(q));
-    }
-    return rows;
-  }, [ipFilter, nc1Search]);
+  const nc1Rows = isNc1 ? (ipFilter && ipFilter !== "Semua" ? NC1_IP_TABLE.filter((r) => r.ip === ipFilter) : NC1_IP_TABLE) : [];
 
   const nc1Features = useMemo(() => {
+    if (!isNc1) return null;
     const keys = new Set(nc1Rows.map((r) => `${r.ip}__${r.tipeLahan}`));
     return NC1_AOI_FEATURES.filter((f) => keys.has(`${f.properties.ip}__${f.properties.tipeLahan}`));
-  }, [nc1Rows]);
+  }, [isNc1, ipFilter]);
 
   if (isNc1) {
+    const hasIpFilter = ipFilter && ipFilter !== "Semua";
     return (
-      <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
-        <div style={{ flex: isNarrow ? "1 1 auto" : "0 0 240px", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", borderBottom: isNarrow ? "none" : undefined, background: "#F5F3EA", display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: 12, borderBottom: "1px solid #D6D2C4" }}>
-            <input
-              value={nc1Search}
-              onChange={(e) => setNc1Search(e.target.value)}
-              placeholder="Cari IP, provinsi, atau tipe lahan..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "7px 10px",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: 12.5,
-                border: "1px solid #D6D2C4",
-                background: "#fff",
-                outline: "none",
-              }}
-            />
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 6 }}>
-              {nc1Rows.length} dari {NC1_IP_TABLE.length} entri (Tabel 6.9)
-            </div>
+      <div>
+        <div style={{ border: "1px solid #D6D2C4", position: "relative" }}>
+          <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px", maxWidth: "80%" }}>
+            {hasIpFilter ? `Menampilkan lokasi ${ipFilter}` : "Semua AOI NC-1 (Tabel 6.9) \u2014 pilih IP di atas untuk zoom ke lokasinya"}
           </div>
-          <div style={{ overflowY: "auto", maxHeight: 480 }}>
+          <LeafletMap sites={[]} aoiFeatures={nc1Features} height={mapHeight} />
+        </div>
+
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 4px 16px" }}>
+          {Object.entries(NC1_TIPE_COLOR).map(([label, color]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
+              <span style={{ width: 9, height: 9, background: color, opacity: 0.6, border: `1px solid ${color}`, display: "inline-block" }} />
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {!hasIpFilter ? (
+          <div style={{ border: "1px solid #D6D2C4", padding: 18, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E", lineHeight: 1.6 }}>
+            Ada {NC1_IP_TABLE.length} entri implementing partner (Tabel 6.9) tersebar di peta. Pilih satu IP dari filter di atas
+            untuk melihat detail target/realisasi/karbon serta contoh kelompok tani di bawahnya, dan peta akan otomatis zoom ke
+            lokasinya.
+          </div>
+        ) : (
+          <div>
             {nc1Rows.map((row, i) => (
-              <AoiListItem
-                key={`${row.ip}-${row.tipeLahan}-${i}`}
-                row={row}
-                active={nc1Selected && nc1Selected.ip === row.ip && nc1Selected.tipeLahan === row.tipeLahan}
-                onClick={() => setNc1Selected(row)}
-              />
-            ))}
-            {nc1Rows.length === 0 && (
-              <div style={{ padding: 14, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677" }}>Tidak ada entri yang cocok.</div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 40%", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", background: "#EAEBDF", position: "relative" }}>
-          <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
-            Lokasi AOI berbentuk dummy (bentuk poligon contoh) &middot; posisi berbasis provinsi riil dari Tabel 6.9
-          </div>
-          <LeafletMap sites={[]} aoiFeatures={nc1Features} selectedAoi={nc1Selected} setSelectedAoi={setNc1Selected} height={mapHeight} />
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 18px 16px", borderTop: "1px solid #D6D2C4" }}>
-            {Object.entries(NC1_TIPE_COLOR).map(([label, color]) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
-                <span style={{ width: 9, height: 9, background: color, opacity: 0.6, border: `1px solid ${color}`, display: "inline-block" }} />
-                {label}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 30%", border: "1px solid #D6D2C4", padding: 22, background: "#F5F3EA", minHeight: 300, maxHeight: isNarrow ? "none" : 640, overflowY: "auto" }}>
-          {!nc1Selected ? (
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#5C5A4E", fontSize: 13.5, lineHeight: 1.6 }}>
-              Pilih salah satu implementing partner dari daftar atau klik AOI pada peta untuk melihat rinciannya (data riil dari Tabel 6.9).
-            </div>
-          ) : (
-            <div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#2C4A3A", marginBottom: 6 }}>
-                PMU NC-1 &middot; {nc1Selected.provinsi}
-              </div>
-              <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 20, color: "#1B2A22", marginBottom: 10, lineHeight: 1.3 }}>
-                {nc1Selected.ip}
-              </div>
-              <div style={{ display: "inline-block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#fff", background: NC1_TIPE_COLOR[nc1Selected.tipeLahan], padding: "3px 9px" }}>
-                {nc1Selected.tipeLahan}
-              </div>
-
-              <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: 14, columnGap: 12 }}>
-                <Field label="Target luasan" value={nc1Selected.target != null ? `${fmt1(nc1Selected.target)} ha` : "\u2013"} />
-                <Field label="Realisasi 2025" value={nc1Selected.real2025 != null ? `${fmt1(nc1Selected.real2025)} ha` : "\u2013"} />
-                <Field label="Realisasi 2024" value={nc1Selected.real2024 != null ? `${fmt1(nc1Selected.real2024)} ha` : "\u2013"} />
-                <Field label="Adjustment karbon 2025" value={nc1Selected.baru2025 != null ? `${fmt1(nc1Selected.baru2025)} ${CO2E}` : "\u2013"} />
-              </div>
-
-              <div style={{ marginTop: 22 }}>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginBottom: 4 }}>
-                  Kelompok / petak (contoh)
+              <div key={`${row.ip}-${row.tipeLahan}-${i}`} style={{ border: "1px solid #D6D2C4", padding: 20, marginBottom: 14 }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#2C4A3A", marginBottom: 6 }}>
+                  PMU NC-1 &middot; {row.provinsi}
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginBottom: 10 }}>
-                  Rincian kelompok tani, desa, dan progres monev di bawah ini bersifat ilustratif (dummy) &mdash; laporan sumber
-                  hanya melaporkan sampai level implementing partner.
+                <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 19, color: "#1B2A22", marginBottom: 10, lineHeight: 1.3 }}>{row.ip}</div>
+                <div style={{ display: "inline-block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#fff", background: NC1_TIPE_COLOR[row.tipeLahan], padding: "3px 9px" }}>
+                  {row.tipeLahan}
                 </div>
-                {(NC1_PETAK_BY_ROW[`${nc1Selected.ip}__${nc1Selected.tipeLahan}`] || []).map((petak) => (
-                  <PetakCard key={petak.id} petak={petak} />
-                ))}
-              </div>
 
-              <Note tone="neutral">
-                Data target/realisasi/karbon di atas bersumber dari Tabel 6.9, Laporan Tahunan FOLU NC-1 TA 2025. Bentuk poligon
-                AOI pada peta dan rincian kelompok/petak adalah ilustrasi (dummy) karena laporan sumber tidak menyertakan
-                geometri spasial maupun data sampai level kelompok.
-              </Note>
-            </div>
-          )}
-        </div>
+                <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: isNarrow ? "1fr 1fr" : "repeat(4, 1fr)", rowGap: 14, columnGap: 12 }}>
+                  <Field label="Target luasan" value={row.target != null ? `${fmt1(row.target)} ha` : "\u2013"} />
+                  <Field label="Realisasi 2025" value={row.real2025 != null ? `${fmt1(row.real2025)} ha` : "\u2013"} />
+                  <Field label="Realisasi 2024" value={row.real2024 != null ? `${fmt1(row.real2024)} ha` : "\u2013"} />
+                  <Field label="Adjustment karbon 2025" value={row.baru2025 != null ? `${fmt1(row.baru2025)} ${CO2E}` : "\u2013"} />
+                </div>
+
+                <div style={{ marginTop: 22 }}>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginBottom: 4 }}>
+                    Kelompok / petak (contoh)
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginBottom: 10 }}>
+                    Rincian kelompok tani, desa, dan progres monev di bawah ini bersifat ilustratif (dummy) &mdash; laporan sumber
+                    hanya melaporkan sampai level implementing partner.
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr", gap: 10 }}>
+                    {(NC1_PETAK_BY_ROW[`${row.ip}__${row.tipeLahan}`] || []).map((petak) => (
+                      <PetakCard key={petak.id} petak={petak} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Note tone="neutral">
+              Data target/realisasi/karbon di atas bersumber dari Tabel 6.9, Laporan Tahunan FOLU NC-1 TA 2025. Bentuk poligon AOI
+              pada peta dan rincian kelompok/petak adalah ilustrasi (dummy) karena laporan sumber tidak menyertakan geometri
+              spasial maupun data sampai level kelompok.
+            </Note>
+          </div>
+        )}
       </div>
     );
   }
@@ -1375,12 +1336,58 @@ function IpTablePanel({ ipTable, ipTotal, hasNote }) {
 
 // Prop-driven carbon report panel. Used for NC-1 (real data from the annual
 // report) and, with dummy data in the same shape, for NC-2&3 and NC-4.
-function ReportCarbonPanel({ data }) {
-  const { meta, planting, methodComparison, interventions, total, survival, methodNote, ipTable, ipTotal, isDummy } = data;
+function CategoryAccumulationChart({ data, title, unitLabel }) {
+  const sorted = [...data].sort((a, b) => b.total - a.total);
+  const height = Math.max(160, sorted.length * 46);
+  return (
+    <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px 14px" }}>
+      <SectionTitle>{title}</SectionTitle>
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 30, left: 10, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" horizontal={false} />
+          <XAxis type="number" tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
+          <YAxis type="category" dataKey="key" width={140} tick={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, fill: "#1B2A22" }} axisLine={false} tickLine={false} />
+          <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${unitLabel}`} />
+          <Bar dataKey="total" radius={[0, 3, 3, 0]} label={{ position: "right", fontFamily: "IBM Plex Sans", fontSize: 11.5, fill: "#5C5A4E", formatter: (v) => fmt1(v) }}>
+            {sorted.map((d) => (
+              <Cell key={d.key} fill={d.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ReportCarbonPanel({ data, ipFilter }) {
+  const { meta, interventions, survival, methodNote, ipTable, isDummy } = data;
+  const hasIpFilter = ipFilter && ipFilter !== "Semua";
+  const rows = hasIpFilter ? ipTable.filter((r) => r.ip === ipFilter) : ipTable;
+  const hasNote = rows.some((r) => r.note);
+
+  const sum = (field) => rows.reduce((a, r) => a + (r[field] || 0), 0);
+  const planting = {
+    targetHa: sum("target"),
+    realisasi2024Ha: sum("real2024"),
+    realisasi2025Ha: sum("real2025"),
+    pctOfTarget: sum("target") ? ((sum("real2025") / sum("target")) * 100).toFixed(1) : "0.0",
+  };
+  const methodComparison = [
+    { tahun: 2024, alometrikLama: sum("lama2024"), adjustmentBaru: sum("baru2024") },
+    { tahun: 2025, alometrikLama: sum("lama2025"), adjustmentBaru: sum("baru2025") },
+  ];
   const before = methodComparison[0];
   const after = methodComparison[methodComparison.length - 1];
-  const kenaikanPct = ((after.adjustmentBaru - before.adjustmentBaru) / before.adjustmentBaru) * 100;
-  const hasNote = ipTable.some((r) => r.note);
+  const kenaikanPct = before.adjustmentBaru ? ((after.adjustmentBaru - before.adjustmentBaru) / before.adjustmentBaru) * 100 : 0;
+
+  // With no IP filter, use the authoritative per-category uncertainty ranges
+  // from Tabel 6.11. When filtered to one IP, uncertainty ranges aren't
+  // available at that granularity, so show a simple computed total instead.
+  const categoryTotals = KARBON_CATEGORIES.map((c) => ({
+    ...c,
+    total: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2025 || 0), 0),
+  })).filter((c) => c.total > 0);
+
   return (
     <div>
       <Note tone={isDummy ? "warn" : "neutral"}>
@@ -1394,16 +1401,19 @@ function ReportCarbonPanel({ data }) {
             Data pada panel ini bersumber dari <strong>{meta.title}</strong> (per {meta.asOf}), bukan data dummy.
           </>
         )}
-        {" "}Filter IP/Status di atas tidak berlaku untuk panel ini karena data dilaporkan pada level implementing partner, bukan
-        titik lokasi individual.
+        {hasIpFilter && (
+          <>
+            {" "}Ditampilkan hanya untuk <strong>{ipFilter}</strong>. Pilih "Semua IP" untuk melihat ringkasan penuh.
+          </>
+        )}
       </Note>
 
       <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginTop: 16 }}>
         {[
-          { label: "Realisasi tanam 2025", value: fmt(planting.realisasi2025Ha), unit: "ha" },
-          { label: "% dari target", value: `${planting.pctOfTarget}%`, unit: `dari ${fmt(planting.targetHa)} ha` },
-          { label: "Potensi karbon 2025 (adjustment)", value: fmt1(total.estimasi), unit: CO2E, accent: true },
-          { label: "Kenaikan vs. 2024", value: `+${kenaikanPct.toFixed(1)}%`, unit: "adjustment baru" },
+          { label: "Realisasi tanam 2025", value: fmt1(planting.realisasi2025Ha), unit: "ha" },
+          { label: "% dari target", value: `${planting.pctOfTarget}%`, unit: `dari ${fmt1(planting.targetHa)} ha` },
+          { label: "Potensi karbon 2025 (adjustment)", value: fmt1(after.adjustmentBaru), unit: CO2E, accent: true },
+          { label: "Kenaikan vs. 2024", value: `${kenaikanPct >= 0 ? "+" : ""}${kenaikanPct.toFixed(1)}%`, unit: "adjustment baru" },
         ].map((it, i) => (
           <div key={it.label} style={{ flex: "1 1 190px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
@@ -1435,38 +1445,55 @@ function ReportCarbonPanel({ data }) {
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <SectionTitle>Estimasi & rentang uncertainty per jenis intervensi ({after.tahun})</SectionTitle>
-        <div style={{ border: "1px solid #D6D2C4" }}>
-          {interventions.map((item) => (
-            <UncertaintyRow key={item.key} item={item} />
-          ))}
-          <div style={{ padding: "14px 18px", borderTop: "1px solid #D6D2C4", background: "#EDEAD9" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Total</span>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
-                {fmt1(total.estimasi)} {CO2E} <span style={{ color: "#8A8677", fontWeight: 400 }}>({"\u00b1"}{total.uncertaintyPct}% indikatif)</span>
-              </span>
-            </div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginTop: 4 }}>
-              Rentang {fmt1(total.lower)}{"\u2013"}{fmt1(total.upper)} {CO2E}. Estimasi awal; belum menjadi klaim karbon final.
+        <CategoryAccumulationChart
+          data={categoryTotals}
+          title={`Akumulasi potensi karbon per jenis intervensi (${after.tahun})`}
+          unitLabel={CO2E}
+        />
+      </div>
+
+      {!hasIpFilter ? (
+        <div style={{ marginTop: 18 }}>
+          <SectionTitle>Estimasi & rentang uncertainty per jenis intervensi ({after.tahun})</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {interventions.map((item) => (
+              <UncertaintyRow key={item.key} item={item} />
+            ))}
+            <div style={{ padding: "14px 18px", borderTop: "1px solid #D6D2C4", background: "#EDEAD9" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Total</span>
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
+                  {fmt1(data.total.estimasi)} {CO2E} <span style={{ color: "#8A8677", fontWeight: 400 }}>({"\u00b1"}{data.total.uncertaintyPct}% indikatif)</span>
+                </span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginTop: 4 }}>
+                Rentang {fmt1(data.total.lower)}{"\u2013"}{fmt1(data.total.upper)} {CO2E}. Estimasi awal; belum menjadi klaim karbon final.
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <IpTablePanel ipTable={ipTable} ipTotal={ipTotal} hasNote={hasNote} />
-
-      <div style={{ marginTop: 18 }}>
-        <SectionTitle>Survival rate yang dilaporkan</SectionTitle>
-        <div style={{ border: "1px solid #D6D2C4" }}>
-          {survival.map((s, i) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1B2A22" }}>{s.label}</span>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: s.value < 70 ? "#B9791F" : "#2C4A3A" }}>{s.value}%</span>
-            </div>
-          ))}
+      ) : (
+        <div style={{ marginTop: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677" }}>
+          Rentang uncertainty (Tabel 6.11) hanya tersedia pada level agregat seluruh IP, sehingga tidak ditampilkan saat difilter
+          per-IP.
         </div>
-      </div>
+      )}
+
+      <IpTablePanel ipTable={rows} ipTotal={{ target: sum("target"), real2024: sum("real2024"), real2025: sum("real2025"), baru2025: sum("baru2025") }} hasNote={hasNote} />
+
+      {!hasIpFilter && (
+        <div style={{ marginTop: 18 }}>
+          <SectionTitle>Survival rate yang dilaporkan</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {survival.map((s, i) => (
+              <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#1B2A22" }}>{s.label}</span>
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: s.value < 70 ? "#B9791F" : "#2C4A3A" }}>{s.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid #D6D2C4", padding: "14px 18px" }}>
         <FileText size={16} color="#5C5A4E" style={{ flex: "none", marginTop: 2 }} />
@@ -1476,16 +1503,12 @@ function ReportCarbonPanel({ data }) {
   );
 }
 
-function CarbonView({ sites, pmuFilter }) {
-  const [ipSel, setIpSel] = useState("Semua");
-
+function CarbonView({ sites, pmuFilter, ipFilter }) {
   if (REPORT_DATA[pmuFilter]) {
-    return <ReportCarbonPanel data={REPORT_DATA[pmuFilter]} />;
+    return <ReportCarbonPanel data={REPORT_DATA[pmuFilter]} ipFilter={ipFilter} />;
   }
 
-  const ipList = ["Semua", ...Array.from(new Set(ALL_IP_ROWS.map((r) => r.ip))).sort()];
-
-  const rows = ipSel === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.ip === ipSel);
+  const rows = !ipFilter || ipFilter === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.ip === ipFilter);
 
   const byPmuCategory = Object.keys(PMU_META).map((pmu) => {
     const row = { pmu: PMU_META[pmu].label };
@@ -1500,21 +1523,17 @@ function CarbonView({ sites, pmuFilter }) {
     total: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2025 || 0), 0),
   }));
   const grandTotal = categoryTotals.reduce((a, r) => a + r.total, 0);
+  const nonZeroCategories = categoryTotals.filter((c) => c.total > 0);
 
   return (
     <div>
       <Note tone="neutral">
         Ringkasan ini disusun dari data per implementing partner (IP) dan dikelompokkan ke 5 jenis intervensi yang sama seperti
         laporan resmi NC-1. Untuk NC-1, angka di sini konsisten dengan panel per-PMU (adjustment 2025); untuk NC-2&3 dan NC-4,
-        angkanya masih <strong>data dummy</strong>.
+        angkanya masih <strong>data dummy</strong>. Gunakan filter IP di atas untuk melihat satu implementing partner saja.
       </Note>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
-        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Filter Implementing Partner (IP)</span>
-        <Select label="IP" value={ipSel} onChange={setIpSel} options={ipList} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", borderBottom: "none" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", borderBottom: "none", marginTop: 16 }}>
         {categoryTotals.map((r, i) => {
           const pct = grandTotal ? Math.round((r.total / grandTotal) * 100) : 0;
           return (
@@ -1549,7 +1568,11 @@ function CarbonView({ sites, pmuFilter }) {
         </ResponsiveContainer>
       </div>
 
-      <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px" }}>
+      <div style={{ marginTop: 18 }}>
+        <CategoryAccumulationChart data={nonZeroCategories} title="Akumulasi potensi karbon per jenis intervensi (2025)" unitLabel={CO2E} />
+      </div>
+
+      <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px 10px", marginTop: 18 }}>
         <SectionTitle>Proyeksi menuju net sink 2030</SectionTitle>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677", marginTop: -8, marginBottom: 8 }}>
           Nilai negatif menunjukkan penyerapan bersih (juta {CO2E}). Target program: net sink {"\u2212"}140 juta {CO2E} pada 2030.
@@ -1822,12 +1845,20 @@ export default function App() {
   const [selected, setSelected] = useState(null);
 
   const ipOptions = useMemo(() => {
+    if (tab === "karbon") {
+      const scoped = pmuFilter === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.pmu === pmuFilter);
+      return ["Semua", ...Array.from(new Set(scoped.map((r) => r.ip))).sort()];
+    }
     if (tab === "peta" && pmuFilter === "NC-1") {
       return ["Semua", ...Array.from(new Set(NC1_IP_TABLE.map((r) => r.ip)))];
     }
     const scoped = pmuFilter === "Semua" ? SITES : SITES.filter((s) => s.pmu === pmuFilter);
     return ["Semua", ...Array.from(new Set(scoped.map((s) => s.ip))).sort()];
   }, [pmuFilter, tab]);
+
+  useEffect(() => {
+    setIpFilter("Semua");
+  }, [tab]);
 
   const handlePmuChange = (val) => {
     setPmuFilter(val);
@@ -1894,20 +1925,13 @@ export default function App() {
               <Filter size={13} /> Filter
             </div>
             <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
-            {!isKarbonReportPanel && (
-              <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
-            )}
+            <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
             {tab === "peta" && pmuFilter !== "NC-1" && (
               <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", ...Object.keys(STATUS_META)]} renderLabel={(o) => o} />
             )}
             {tab === "peta" && pmuFilter === "NC-1" && (
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", fontStyle: "italic" }}>
                 Menampilkan data riil Tabel 6.9 (IP asli, bukan status verifikasi dummy)
-              </span>
-            )}
-            {isKarbonReportPanel && (
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", fontStyle: "italic" }}>
-                Filter IP tidak berlaku untuk ringkasan per-PMU di bawah
               </span>
             )}
           </div>
@@ -1917,7 +1941,7 @@ export default function App() {
         {tab === "pengukuran" && <MeasurementView year={year} setYear={setYear} />}
         {tab === "pelaporan" && <ReportingView />}
         {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
-        {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} />}
+        {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
           {tab === "peta" || tab === "karbon"
