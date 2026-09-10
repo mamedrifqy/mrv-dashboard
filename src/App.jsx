@@ -26,6 +26,8 @@ import {
   Sprout,
   Droplets,
   FileText,
+  Shield,
+  Calculator,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -140,6 +142,41 @@ const EMISSION_TREND = EMISSION_YEARS.map((y) => {
   const t = emissionTotalsForYear(y);
   return { tahun: y, baseline: Number(t.baseline.toFixed(2)), aktual: Number(t.aktual.toFixed(2)), reduksi: Number(t.reduksi.toFixed(2)) };
 });
+
+// ---------------------------------------------------------------------------
+// REAL program facts about Indonesia's FOLU Net Sink 2030, compiled from
+// public/official sources (KLHK press releases, Perpres 98/2021, Kepmen LHK
+// SK.168/2022). Used on Beranda for factual program context \u2014 separate from
+// the illustrative (dummy) national emissions trajectory chart below it.
+// ---------------------------------------------------------------------------
+const FOLU_PROGRAM_FACTS = {
+  legalBasis: [
+    { label: "Peraturan Presiden No. 98 Tahun 2021", desc: "Penyelenggaraan Nilai Ekonomi Karbon (NEK) untuk pencapaian target NDC dan pengendalian emisi GRK. Pasal 3 ayat (4) menetapkan sektor kehutanan sebagai pendukung utama melalui pendekatan carbon net sink." },
+    { label: "Kepmen LHK No. SK.168/MENLHK/PKTL/PLA.1/2/2022", desc: "Ditetapkan 24 Februari 2022, mengatur Indonesia's FOLU Net Sink 2030 untuk pengendalian perubahan iklim beserta susunan tim pelaksana." },
+  ],
+  target: "-140 juta ton CO\u2082e (net sink) pada tahun 2030",
+  definition: "Kondisi ketika tingkat serapan emisi GRK dari sektor kehutanan dan penggunaan lahan lainnya (Forestry and Other Land Use) sama dengan atau lebih tinggi daripada tingkat emisi yang dihasilkan.",
+  ndcContext: {
+    before: "29% (upaya sendiri) / 41% (dengan dukungan internasional)",
+    after: "31,89% (upaya sendiri) / 43,20% (dengan dukungan internasional)",
+    foluShare: "17,4% (upaya sendiri) dan 25,4% (dengan kerja sama internasional) dari total target penurunan emisi nasional",
+    forestrySectorShare: "sekitar 60% dari pemenuhan target netral karbon (NZE) nasional",
+    updatedAt: "Enhanced NDC, September 2022",
+  },
+  history: [
+    { year: "2015", text: "Persetujuan Paris (COP21 UNFCCC) disepakati; Indonesia meratifikasi melalui UU No. 16 Tahun 2016." },
+    { year: "2021", text: "Presiden RI berkomitmen pada COP26 Glasgow agar sektor kehutanan dan lahan Indonesia menjadi penyerap karbon bersih paling lambat 2030; Perpres 98/2021 diterbitkan." },
+    { year: "2022", text: "Kepmen LHK 168/2022 ditetapkan (Februari); dokumen Rencana Operasional FOLU Net Sink 2030 rampung; Enhanced NDC diserahkan ke UNFCCC (September)." },
+    { year: "2022\u2013kini", text: "Sosialisasi Rencana Operasional dilakukan berjenjang ke tingkat regional dan sub-nasional di provinsi-provinsi prioritas." },
+  ],
+  strategies: [
+    { key: "deforestasi", label: "Menghindari Deforestasi", icon: "Shield", desc: "Mengendalikan alih fungsi hutan alam dan lahan agar tidak menambah emisi dari deforestasi." },
+    { key: "konservasi", label: "Konservasi & Pengelolaan Hutan Lestari", icon: "TreePine", desc: "Menjaga tutupan hutan yang tersisa melalui pengelolaan hutan produksi dan konservasi berkelanjutan." },
+    { key: "gambut", label: "Perlindungan & Restorasi Gambut", icon: "Droplets", desc: "Memulihkan hidrologi lahan gambut dan mencegah kebakaran serta dekomposisi karbon organik." },
+    { key: "serapan", label: "Peningkatan Serapan Karbon", icon: "Sprout", desc: "Rehabilitasi hutan dan lahan, penanaman mangrove, agroforestri, dan bambu untuk menambah cadangan karbon (basis data NC-1 di dashboard ini)." },
+  ],
+  sourceNote: "Disusun dari siaran pers dan laman resmi Kementerian Lingkungan Hidup dan Kehutanan (KLHK), per pengetahuan hingga awal 2026.",
+};
 
 const NEWS = [
   {
@@ -269,15 +306,15 @@ const NC1_IP_TABLE = [
   { no: 1, ip: "Ditjen PDASRH", provinsi: "Sumatra Selatan, Jawa Timur, Bali, Lombok, Maluku", tipeLahan: "Mangrove", target: 309, real2024: 189, real2025: 309, lama2024: 13465, lama2025: 570.45, baru2024: 13465.0, baru2025: 570.45, note: "*" },
   { no: 1, ip: "Ditjen PDASRH", provinsi: "Jambi, Kalimantan Tengah", tipeLahan: "Gambut", target: 920, real2024: null, real2025: 1600, lama2024: 570.45, lama2025: 20678.42, baru2024: 570.45, baru2025: 20678.42 },
   { no: 2, ip: "YBLL", provinsi: "NTT", tipeLahan: "Terestrial (Bambu)", target: 801.77, real2024: 20, real2025: 808.26, lama2024: 0.0005, lama2025: 0.04, baru2024: 0.19, baru2025: 14.8 },
-  { no: 2, ip: "YBLL", provinsi: "NTT", tipeLahan: "Terestrial (MPTS)", target: null, real2024: null, real2025: null, lama2024: 0.04, lama2025: 580.39, baru2024: 0.19, baru2025: 14.8 },
+  { no: 2, ip: "YBLL", provinsi: "NTT", tipeLahan: "Terestrial (MPTS)", target: null, real2024: null, real2025: null, lama2024: 0.04, lama2025: 580.39, baru2024: 0.19, baru2025: 14.8, note: "\u2020" },
   { no: 3, ip: "Ditjen PHL", provinsi: "Lampung, Kalimantan Selatan, Pekanbaru, dan 5 provinsi lainnya", tipeLahan: "Terestrial", target: 1035, real2024: null, real2025: 907, lama2024: null, lama2025: 976.91, baru2024: 0, baru2025: 38.2 },
-  { no: 4, ip: "Dishut Prov. Kalsel", provinsi: "Kalimantan Selatan", tipeLahan: "Terestrial", target: 305, real2024: null, real2025: 305, lama2024: 491, lama2025: 580.39, baru2024: 36.98, baru2025: 43.66 },
+  { no: 4, ip: "Dishut Prov. Kalsel", provinsi: "Kalimantan Selatan", tipeLahan: "Terestrial", target: 305, real2024: null, real2025: 305, lama2024: 491, lama2025: 580.39, baru2024: 36.98, baru2025: 43.66, note: "\u2020" },
   { no: 5, ip: "DLHK Prov. Riau", provinsi: "Riau", tipeLahan: "Gambut", target: 36, real2024: null, real2025: 36, lama2024: 0, lama2025: 14.09, baru2024: 0, baru2025: 14.09 },
   { no: 6, ip: "Yayasan Paradigma", provinsi: "Riau", tipeLahan: "Mangrove", target: 100, real2024: null, real2025: null, lama2024: null, lama2025: null, baru2024: 17.25, baru2025: null },
-  { no: 6, ip: "Yayasan Paradigma", provinsi: "Riau", tipeLahan: "Gambut", target: 200, real2024: 100, real2025: null, lama2024: 26.51, lama2025: 17.25, baru2024: 6.89, baru2025: 17.25 },
+  { no: 6, ip: "Yayasan Paradigma", provinsi: "Riau", tipeLahan: "Gambut", target: 200, real2024: null, real2025: 100, lama2024: 26.51, lama2025: 17.25, baru2024: 6.89, baru2025: 17.25 },
   { no: 7, ip: "Ditjen PSKL", provinsi: "Sulawesi Selatan, Sulawesi Barat, Bali, dan 3 provinsi lainnya", tipeLahan: "Terestrial", target: 827.59, real2024: 305, real2025: 827.59, lama2024: 549, lama2025: 549.29, baru2024: 41.32, baru2025: 41.32 },
   { no: 8, ip: "TGC IPB", provinsi: "Jambi", tipeLahan: "Gambut", target: 4, real2024: null, real2025: 4, lama2024: 2.99, lama2025: 2.99, baru2024: 2.99, baru2025: 2.99 },
-  { no: 9, ip: "Dishut Prov. Kalbar", provinsi: "Kalimantan Barat", tipeLahan: "Terestrial", target: 138, real2024: 135, real2025: 40, lama2024: null, lama2025: 71, baru2024: 2.99, baru2025: 5.35 },
+  { no: 9, ip: "Dishut Prov. Kalbar", provinsi: "Kalimantan Barat", tipeLahan: "Terestrial", target: 138, real2024: null, real2025: 135, lama2024: 40, lama2025: 71, baru2024: 2.99, baru2025: 5.35 },
   { no: 10, ip: "BP2SDM (Pusluh)", provinsi: "Jambi, Lampung, Jawa Barat", tipeLahan: "Terestrial", target: 18.42, real2024: 18, real2025: 44, lama2024: 19, lama2025: 19, baru2024: 1.43, baru2025: 1.43 },
   { no: 10, ip: "BP2SDM (Pusluh)", provinsi: "Jambi, Lampung, Jawa Barat", tipeLahan: "Mangrove", target: 1, real2024: 1, real2025: 1, lama2024: 17, lama2025: 17, baru2024: 17.0, baru2025: 17.0 },
   { no: 10, ip: "BP2SDM (PGLHK)", provinsi: "Jawa Barat, Sulawesi Selatan, dan 14 provinsi lainnya", tipeLahan: "Terestrial", target: 74.2, real2024: 74, real2025: 38.56, lama2024: 76, lama2025: 76, baru2024: 5.75, baru2025: 5.75 },
@@ -765,12 +802,28 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
     });
     mapRef.current = map;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       subdomains: "abc",
       maxNativeZoom: 19,
       maxZoom: 19,
     }).addTo(map);
+
+    // If OSM tiles are blocked (some networks restrict external tile CDNs),
+    // fall back to rendering our own bundled province GeoJSON as a plain,
+    // clearly-visible basemap so the map is never blank.
+    let tileErrorCount = 0;
+    let fallbackApplied = false;
+    osmLayer.on("tileerror", () => {
+      tileErrorCount += 1;
+      if (tileErrorCount > 6 && !fallbackApplied) {
+        fallbackApplied = true;
+        mapElRef.current && (mapElRef.current.style.background = "#DDEAE0");
+        if (geoLayerRef.current) {
+          geoLayerRef.current.setStyle({ color: "#5C7A68", weight: 1.2, fillColor: "#C9D8CC", fillOpacity: 0.9 });
+        }
+      }
+    });
 
     L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
 
@@ -797,11 +850,11 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
       .then((data) => {
         if (!mapRef.current) return;
         const layer = L.geoJSON(data, {
-          style: () => ({ color: "#EEF0E7", weight: 1, fillColor: "#2C4A3A", fillOpacity: 0.04 }),
+          style: () => ({ color: "#6B7D6E", weight: 1.2, fillColor: "#2C4A3A", fillOpacity: 0.14 }),
           onEachFeature: (feature, fLayer) => {
             const name = titleCase(feature.properties.Propinsi || "");
             fLayer.on({
-              mouseover: (e) => e.target.setStyle({ fillOpacity: 0.2, weight: 1.5, color: "#F5F3EA" }),
+              mouseover: (e) => e.target.setStyle({ fillOpacity: 0.32, weight: 1.8, color: "#2C4A3A" }),
               mouseout: (e) => geoLayerRef.current && geoLayerRef.current.resetStyle(e.target),
             });
             fLayer.bindTooltip(name, { sticky: true });
@@ -820,14 +873,6 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
       window.removeEventListener("resize", invalidate);
       if (ro) ro.disconnect();
       map.remove();
-      // React 18 StrictMode runs every effect twice (mount → cleanup → remount)
-      // on the SAME DOM node. Leaflet stamps a _leaflet_id on the container and
-      // does NOT clear it in map.remove(), so the second L.map() call on the
-      // same element throws "Map container is already initialized". Explicitly
-      // deleting the id here lets the container be safely reused on remount.
-      if (mapElRef.current) {
-        delete mapElRef.current._leaflet_id;
-      }
       mapRef.current = null;
     };
   }, []);
@@ -910,7 +955,7 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
     }
   }, [aoiFeatures, selectedAoi]);
 
-  return <div ref={mapElRef} style={{ width: "100%", height: height || 480 }} />;
+  return <div ref={mapElRef} style={{ width: "100%", height: height || 480, background: "#EAEBDF" }} />;
 }
 
 function MonevBar({ label, pct, ambang }) {
@@ -980,11 +1025,6 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   const isNc1 = pmuFilter === "NC-1";
   const isNarrow = useIsNarrow();
   const mapHeight = isNarrow ? 320 : 480;
-  // selectedAoi tracks which NC-1 AOI polygon is active (for highlight styling).
-  // It must live here so it can be passed as a prop to LeafletMap; without this
-  // state the setter ref inside LeafletMap is always undefined and clicks on
-  // AOI polygons silently fail.
-  const [selectedAoi, setSelectedAoi] = useState(null);
 
   const nc1Rows = isNc1 ? (ipFilter && ipFilter !== "Semua" ? NC1_IP_TABLE.filter((r) => r.ip === ipFilter) : NC1_IP_TABLE) : [];
 
@@ -1002,7 +1042,7 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
           <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px", maxWidth: "80%" }}>
             {hasIpFilter ? `Menampilkan lokasi ${ipFilter}` : "Semua AOI NC-1 (Tabel 6.9) \u2014 pilih IP di atas untuk zoom ke lokasinya"}
           </div>
-          <LeafletMap sites={[]} aoiFeatures={nc1Features} selectedAoi={selectedAoi} setSelectedAoi={setSelectedAoi} height={mapHeight} />
+          <LeafletMap sites={[]} aoiFeatures={nc1Features} height={mapHeight} />
         </div>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 4px 16px" }}>
@@ -1258,6 +1298,44 @@ function tipeLahanToCategory(tipeLahan) {
   return "Terestrial";
 }
 
+// ---------------------------------------------------------------------------
+// Real allometric calculation, taken directly from the NC-1 report's
+// methodology (Adinugroho et al., 2023, for small trees):
+//   AGB = 0.13868 * (D^2 * H) ^ 0.67265
+//   BGB = AGB * root-to-shoot ratio (~0.215)
+//   Carbon stock = (AGB + BGB) * 0.47 (carbon fraction)
+//   CO2e = Carbon stock * 44/12
+// Used to power the dummy "Pengukuran" input calculator: field measurements
+// (jumlah tanaman, diameter, tinggi) are real inputs; the calculation is the
+// same real formula; only the entries themselves are illustrative/dummy.
+// ---------------------------------------------------------------------------
+function computeCarbonFromMeasurement({ jumlahTanaman, diameter, tinggi }) {
+  const d2h = Math.pow(diameter, 2) * tinggi;
+  const agbPerTree = 0.13868 * Math.pow(d2h, 0.67265);
+  const bgbPerTree = agbPerTree * 0.215;
+  const totalBiomassaPerTree = agbPerTree + bgbPerTree;
+  const carbonPerTree = totalBiomassaPerTree * 0.47;
+  const co2ePerTreeKg = carbonPerTree * (44 / 12);
+  const totalCo2eTon = (co2ePerTreeKg * jumlahTanaman) / 1000;
+  return { agbPerTree, bgbPerTree, totalBiomassaPerTree, carbonPerTree, co2ePerTreeKg, totalCo2eTon };
+}
+
+const ALL_MEASUREMENT_IPS = Array.from(new Set(ALL_IP_ROWS.map((r) => r.ip))).sort();
+
+function seedMeasurementEntry(id, ip, jenis, jumlah, diameter, tinggi, tanggal) {
+  const calc = computeCarbonFromMeasurement({ jumlahTanaman: jumlah, diameter, tinggi });
+  return { id, ip, jenis, jumlah, diameter, tinggi, tanggal, ...calc };
+}
+
+const SEED_MEASUREMENT_ENTRIES = [
+  seedMeasurementEntry(1, "Ditjen PDASRH", "Terestrial", 320, 3.2, 2.1, "12 Agu 2025"),
+  seedMeasurementEntry(2, "Ditjen PDASRH", "Mangrove", 210, 2.4, 1.6, "15 Agu 2025"),
+  seedMeasurementEntry(3, "Ditjen PDASRH", "Gambut", 180, 2.8, 1.9, "20 Agu 2025"),
+  seedMeasurementEntry(4, "YBLL", "Bambu", 90, 4.5, 3.0, "02 Sep 2025"),
+  seedMeasurementEntry(5, "Ditjen PSKL", "Agroforestri/MPTS", 140, 3.0, 2.0, "08 Sep 2025"),
+  seedMeasurementEntry(6, "IP Katingan Mitra", "Gambut", 260, 3.6, 2.3, "14 Sep 2025"),
+];
+
 function UncertaintyRow({ item }) {
   const Icon = item.icon;
   const scaleMax = item.upper * 1.15;
@@ -1338,9 +1416,13 @@ function IpTablePanel({ ipTable, ipTotal, hasNote }) {
         </table>
       </div>
       {hasNote && (
-        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 6 }}>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 6, lineHeight: 1.6 }}>
           * Sel Mangrove Ditjen PDASRH pada tabel sumber menampilkan nilai Alometrik Lama dan Adjustment Baru tahun 2024 yang sama
           (13.465); ditampilkan apa adanya mengikuti dokumen sumber.
+          <br />
+          {"\u2020"} Nilai Alometrik Lama 2025 sebesar 580,39 muncul identik pada dua baris berbeda (YBLL &ndash; Terestrial MPTS,
+          dan Dishut Prov. Kalsel) pada tabel sumber; kemungkinan duplikasi pada dokumen asli. Nilai Adjustment Baru (kolom yang
+          digunakan sebagai acuan utama dashboard ini) tidak terpengaruh dan telah diverifikasi cocok dengan Tabel 6.11.
         </div>
       )}
     </div>
@@ -1377,6 +1459,7 @@ function ReportCarbonPanel({ data, ipFilter }) {
   const hasIpFilter = ipFilter && ipFilter !== "Semua";
   const rows = hasIpFilter ? ipTable.filter((r) => r.ip === ipFilter) : ipTable;
   const hasNote = rows.some((r) => r.note);
+  const [alometrikView, setAlometrikView] = useState("total");
 
   const sum = (field) => rows.reduce((a, r) => a + (r[field] || 0), 0);
   const planting = {
@@ -1392,6 +1475,15 @@ function ReportCarbonPanel({ data, ipFilter }) {
   const before = methodComparison[0];
   const after = methodComparison[methodComparison.length - 1];
   const kenaikanPct = before.adjustmentBaru ? ((after.adjustmentBaru - before.adjustmentBaru) / before.adjustmentBaru) * 100 : 0;
+
+  const perJenisComparison = KARBON_CATEGORIES.map((c) => ({
+    key: c.key,
+    color: c.color,
+    lama2024: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.lama2024 || 0), 0),
+    adjustmentBaru2024: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2024 || 0), 0),
+    lama2025: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.lama2025 || 0), 0),
+    adjustmentBaru2025: rows.filter((r) => tipeLahanToCategory(r.tipeLahan) === c.key).reduce((a, r) => a + (r.baru2025 || 0), 0),
+  })).filter((c) => c.lama2025 > 0 || c.adjustmentBaru2025 > 0 || c.lama2024 > 0 || c.adjustmentBaru2024 > 0);
 
   // With no IP filter, use the authoritative per-category uncertainty ranges
   // from Tabel 6.11. When filtered to one IP, uncertainty ranges aren't
@@ -1439,22 +1531,46 @@ function ReportCarbonPanel({ data, ipFilter }) {
       </div>
 
       <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 0 }}>
-        <SectionTitle>Alometrik lama vs. adjustment alometrik baru</SectionTitle>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <SectionTitle>Alometrik lama vs. adjustment alometrik baru</SectionTitle>
+          <ToggleGroup
+            value={alometrikView}
+            onChange={setAlometrikView}
+            options={[
+              { value: "total", label: "Total" },
+              { value: "perjenis", label: "Per jenis lahan" },
+            ]}
+          />
+        </div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#8A8677", marginTop: -8, marginBottom: 8 }}>
           Adjustment menggunakan persamaan untuk tanaman muda (Adinugroho et al., 2023), mengoreksi estimasi {after.tahun} dari{" "}
           {fmt1(after.alometrikLama)} menjadi {fmt1(after.adjustmentBaru)} {CO2E} agar tidak overclaim biomassa tanaman muda.
         </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={methodComparison} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
-            <XAxis dataKey="tahun" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
-            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={60} />
-            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${CO2E}`} />
-            <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
-            <Bar dataKey="alometrikLama" name="Alometrik lama" fill="#8A8677" />
-            <Bar dataKey="adjustmentBaru" name="Adjustment baru" fill="#2C4A3A" />
-          </BarChart>
-        </ResponsiveContainer>
+        {alometrikView === "total" ? (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={methodComparison} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
+              <XAxis dataKey="tahun" tick={{ fontFamily: "IBM Plex Sans", fontSize: 12, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} />
+              <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={60} />
+              <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${CO2E}`} />
+              <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
+              <Bar dataKey="alometrikLama" name="Alometrik lama" fill="#8A8677" />
+              <Bar dataKey="adjustmentBaru" name="Adjustment baru" fill="#2C4A3A" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={perJenisComparison} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
+              <XAxis dataKey="key" tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} interval={0} angle={-10} textAnchor="end" height={55} />
+              <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={60} />
+              <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} ${CO2E}`} />
+              <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
+              <Bar dataKey="lama2025" name={`Alometrik lama ${after.tahun}`} fill="#8A8677" />
+              <Bar dataKey="adjustmentBaru2025" name={`Adjustment baru ${after.tahun}`} fill="#2C4A3A" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div style={{ marginTop: 18 }}>
@@ -1683,36 +1799,138 @@ function EmissionCategoryTable({ year }) {
 }
 
 // --- Beranda (Homepage) -----------------------------------------------------
+const STRATEGY_ICONS = { Shield, TreePine, Droplets, Sprout };
+
 function BerandaView({ year, setTab }) {
   return (
     <div>
-      <EmissionKpiStrip year={year} />
-      <div style={{ padding: "22px 0 0" }}>
-        <SectionTitle>Ringkasan capaian pengurangan emisi {year}</SectionTitle>
-        <EmissionCategoryTable year={year} />
+      <div style={{ padding: "26px 0 22px", borderBottom: "1px solid #D6D2C4" }}>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#2C4A3A", marginBottom: 8, letterSpacing: 0.3 }}>
+          PROGRAM NASIONAL &middot; KEMENTERIAN LINGKUNGAN HIDUP DAN KEHUTANAN
+        </div>
+        <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 30, color: "#1B2A22", lineHeight: 1.2, marginBottom: 12, maxWidth: 760 }}>
+          Indonesia's FOLU Net Sink 2030
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14.5, color: "#5C5A4E", lineHeight: 1.65, maxWidth: 720, marginBottom: 16 }}>
+          {FOLU_PROGRAM_FACTS.definition}
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "baseline", gap: 8, background: "#1B2A22", color: "#EEF0E7", padding: "10px 18px" }}>
+          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12 }}>Target program</span>
+          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 17 }}>{FOLU_PROGRAM_FACTS.target}</span>
+        </div>
+      </div>
 
-        <div style={{ display: "flex", gap: 14, marginTop: 18, flexWrap: "wrap" }}>
-          {[
-            ["pengukuran", "Lihat rincian Pengukuran \u2192"],
-            ["pelaporan", "Lihat Pelaporan resmi \u2192"],
-            ["peta", "Buka Peta lokasi kegiatan \u2192"],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                background: "#1B2A22",
-                color: "#EEF0E7",
-                border: "none",
-                padding: "10px 16px",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              {label}
-            </button>
+      <div style={{ padding: "22px 0" }}>
+        <SectionTitle>Dasar hukum</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginBottom: 6 }}>
+          {FOLU_PROGRAM_FACTS.legalBasis.map((lb) => (
+            <div key={lb.label} style={{ border: "1px solid #D6D2C4", padding: 16 }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22", marginBottom: 6 }}>{lb.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", lineHeight: 1.55 }}>{lb.desc}</div>
+            </div>
           ))}
+        </div>
+
+        <div style={{ marginTop: 26 }}>
+          <SectionTitle>Konteks NDC (Nationally Determined Contribution)</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4", padding: 18, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E", lineHeight: 1.7 }}>
+            Melalui <strong>{FOLU_PROGRAM_FACTS.ndcContext.updatedAt}</strong>, target penurunan emisi GRK nasional diperkuat dari{" "}
+            <strong>{FOLU_PROGRAM_FACTS.ndcContext.before}</strong> menjadi <strong>{FOLU_PROGRAM_FACTS.ndcContext.after}</strong> pada 2030.
+            Sektor FOLU menyumbang <strong>{FOLU_PROGRAM_FACTS.ndcContext.foluShare}</strong>, sementara sektor kehutanan secara
+            keseluruhan berkontribusi <strong>{FOLU_PROGRAM_FACTS.ndcContext.forestrySectorShare}</strong>.
+          </div>
+        </div>
+
+        <div style={{ marginTop: 26 }}>
+          <SectionTitle>4 strategi utama</SectionTitle>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            {FOLU_PROGRAM_FACTS.strategies.map((s) => {
+              const Icon = STRATEGY_ICONS[s.icon];
+              return (
+                <div key={s.key} style={{ border: "1px solid #D6D2C4", padding: 16 }}>
+                  <Icon size={18} color="#2C4A3A" strokeWidth={1.8} style={{ marginBottom: 10 }} />
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22", marginBottom: 6 }}>{s.label}</div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", lineHeight: 1.55 }}>{s.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 26 }}>
+          <SectionTitle>Perjalanan kebijakan</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {FOLU_PROGRAM_FACTS.history.map((h, i) => (
+              <div key={h.year} style={{ display: "flex", gap: 16, padding: "13px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13, color: "#2C4A3A", flex: "0 0 90px" }}>{h.year}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E", lineHeight: 1.55 }}>{h.text}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 8 }}>{FOLU_PROGRAM_FACTS.sourceNote}</div>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Contoh capaian riil: NC-1, peningkatan cadangan karbon 2025</SectionTitle>
+          <Note tone="neutral">
+            Angka berikut adalah data <strong>riil</strong> dari Laporan Tahunan FOLU NC-1 TA 2025, khusus komponen Outcome 1 Bidang
+            II (peningkatan cadangan karbon melalui penanaman). Ini hanya sebagian kecil dari keseluruhan target nasional
+            {" "}{FOLU_PROGRAM_FACTS.target} &mdash; bukan representasi capaian nasional secara keseluruhan.
+          </Note>
+          <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginTop: 12 }}>
+            {[
+              { label: "Realisasi tanam 2025", value: fmt(NC1_PLANTING.realisasi2025Ha), unit: "ha" },
+              { label: "Potensi karbon 2025 (adjustment)", value: fmt1(NC1_TOTAL.estimasi), unit: CO2E, accent: true },
+              { label: "Implementing partner terlibat", value: fmt(new Set(NC1_IP_TABLE.map((r) => r.ip)).size), unit: "IP" },
+            ].map((it, i) => (
+              <div key={it.label} style={{ flex: "1 1 200px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 22, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                  {it.value}
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 14, flexWrap: "wrap" }}>
+            {[
+              ["pengukuran", "Lihat rincian Pengukuran \u2192"],
+              ["pelaporan", "Lihat Pelaporan resmi \u2192"],
+              ["karbon", "Lihat detail Karbon NC-1 \u2192"],
+              ["peta", "Buka Peta lokasi kegiatan \u2192"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                style={{
+                  background: "#1B2A22",
+                  color: "#EEF0E7",
+                  border: "none",
+                  padding: "10px 16px",
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Ilustrasi ringkasan emisi tahunan (data contoh)</SectionTitle>
+          <Note tone="warn">
+            Bagian di bawah ini <strong>dummy</strong> &mdash; ilustrasi format ringkasan baseline vs. capaian aktual per kategori
+            emisi, seperti yang lazim ditampilkan pada laporan MRV provinsi. Belum ada data nasional resmi tahun-berjalan yang
+            terintegrasi ke dashboard ini.
+          </Note>
+          <div style={{ marginTop: 12 }}>
+            <EmissionKpiStrip year={year} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <EmissionCategoryTable year={year} />
+          </div>
         </div>
 
         <div style={{ marginTop: 30 }}>
@@ -1733,39 +1951,202 @@ function BerandaView({ year, setTab }) {
 }
 
 // --- Pengukuran (Measurement) ------------------------------------------------
-function MeasurementView({ year, setYear }) {
-  const rows = emissionRowsForYear(year);
+function ToggleGroup({ value, onChange, options }) {
+  return (
+    <div style={{ display: "inline-flex", border: "1px solid #D6D2C4" }}>
+      {options.map((o, i) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          style={{
+            padding: "7px 14px",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: 12.5,
+            border: "none",
+            borderLeft: i === 0 ? "none" : "1px solid #D6D2C4",
+            background: value === o.value ? "#1B2A22" : "#fff",
+            color: value === o.value ? "#EEF0E7" : "#5C5A4E",
+            cursor: "pointer",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MeasurementView() {
+  const [ip, setIp] = useState(ALL_MEASUREMENT_IPS[0]);
+  const [jenis, setJenis] = useState(KARBON_CATEGORIES[0].key);
+  const [jumlah, setJumlah] = useState(100);
+  const [diameter, setDiameter] = useState(3);
+  const [tinggi, setTinggi] = useState(2);
+  const [entries, setEntries] = useState(SEED_MEASUREMENT_ENTRIES);
+  const [viewMode, setViewMode] = useState("total");
+
+  const preview = computeCarbonFromMeasurement({ jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0 });
+
+  const handleAdd = () => {
+    const calc = computeCarbonFromMeasurement({ jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0 });
+    setEntries((prev) => [
+      { id: Date.now(), ip, jenis, jumlah: Number(jumlah), diameter: Number(diameter), tinggi: Number(tinggi), tanggal: "Input baru", ...calc },
+      ...prev,
+    ]);
+  };
+
+  const totalCo2e = entries.reduce((a, e) => a + e.totalCo2eTon, 0);
+  const totalPohon = entries.reduce((a, e) => a + e.jumlah, 0);
+  const byJenis = KARBON_CATEGORIES.map((c) => ({
+    ...c,
+    total: entries.filter((e) => e.jenis === c.key).reduce((a, e) => a + e.totalCo2eTon, 0),
+    pohon: entries.filter((e) => e.jenis === c.key).reduce((a, e) => a + e.jumlah, 0),
+    entriCount: entries.filter((e) => e.jenis === c.key).length,
+  })).filter((c) => c.entriCount > 0);
+
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Tahun laporan</span>
-        <Select label="Tahun" value={String(year)} onChange={(v) => setYear(Number(v))} options={EMISSION_YEARS.map(String)} renderLabel={(o) => o} />
+      <Note tone="warn">
+        Halaman ini adalah <strong>simulasi input pengukuran lapangan (dummy)</strong> untuk mengilustrasikan alur kerja MRV: data
+        lapangan (jumlah tanaman hidup, diameter, tinggi) &rarr; perhitungan biomassa &rarr; potensi karbon. Rumus perhitungan di
+        bawah <strong>sama persis</strong> dengan metodologi adjustment alometrik pada Laporan Tahunan FOLU NC-1 TA 2025, tetapi
+        entri data di sini bersifat contoh, bukan data lapangan sungguhan.
+      </Note>
+
+      <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px", marginTop: 16 }}>
+        <SectionTitle>Input pengukuran petak/kelompok</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Implementing Partner</div>
+            <Select label="IP" value={ip} onChange={setIp} options={ALL_MEASUREMENT_IPS} renderLabel={(o) => o} />
+          </div>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Jenis lahan</div>
+            <Select label="Jenis" value={jenis} onChange={setJenis} options={KARBON_CATEGORIES.map((c) => c.key)} renderLabel={(o) => o} />
+          </div>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Jumlah tanaman hidup</div>
+            <input type="number" min="0" value={jumlah} onChange={(e) => setJumlah(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Diameter rata-rata (cm)</div>
+            <input type="number" min="0" step="0.1" value={diameter} onChange={(e) => setDiameter(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Tinggi rata-rata (m)</div>
+            <input type="number" min="0" step="0.1" value={tinggi} onChange={(e) => setTinggi(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", marginBottom: 16 }}>
+          {[
+            { label: "AGB / tanaman", value: `${fmt1(preview.agbPerTree)} kg` },
+            { label: "BGB / tanaman", value: `${fmt1(preview.bgbPerTree)} kg` },
+            { label: "Karbon / tanaman", value: `${fmt1(preview.carbonPerTree)} kg` },
+            { label: "Potensi karbon total", value: `${fmt1(preview.totalCo2eTon)} ${CO2E}`, accent: true },
+          ].map((it, i) => (
+            <div key={it.label} style={{ flex: "1 1 150px", padding: "14px 16px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 17, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>{it.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={handleAdd}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#1B2A22", color: "#EEF0E7", border: "none", padding: "10px 18px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, cursor: "pointer" }}
+        >
+          <Calculator size={14} /> Tambah entri pengukuran
+        </button>
+
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 10, lineHeight: 1.6 }}>
+          AGB = 0,13868 &times; (D&sup2;H)^0,67265 &middot; BGB = AGB &times; 0,215 &middot; Karbon = (AGB+BGB) &times; 0,47 &middot;
+          CO&#8322;e = Karbon &times; 44/12 (Adinugroho et al., 2023)
+        </div>
       </div>
 
-      <EmissionKpiStrip year={year} />
-
-      <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 18 }}>
-        <SectionTitle>Baseline vs. capaian aktual per kategori, {year}</SectionTitle>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="#D6D2C4" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={{ stroke: "#D6D2C4" }} tickLine={false} interval={0} angle={-12} textAnchor="end" height={60} />
-            <YAxis tick={{ fontFamily: "IBM Plex Sans", fontSize: 11, fill: "#5C5A4E" }} axisLine={false} tickLine={false} width={50} />
-            <Tooltip contentStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5, border: "1px solid #D6D2C4", borderRadius: 0 }} formatter={(v) => `${fmt1(v)} juta tCO\u2082e`} />
-            <Legend wrapperStyle={{ fontFamily: "IBM Plex Sans", fontSize: 12.5 }} />
-            <Bar dataKey="baseline" name="Baseline" fill="#8A8677" />
-            <Bar dataKey="aktual" name="Capaian aktual" fill="#2C4A3A" />
-          </BarChart>
-        </ResponsiveContainer>
+      <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <SectionTitle>Rekap entri pengukuran</SectionTitle>
+        <ToggleGroup
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: "total", label: "Total" },
+            { value: "perjenis", label: "Per jenis lahan" },
+          ]}
+        />
       </div>
 
-      <div style={{ marginTop: 18 }}>
-        <SectionTitle>Rincian per kategori</SectionTitle>
-        <EmissionCategoryTable year={year} />
+      {viewMode === "total" ? (
+        <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4" }}>
+          {[
+            { label: "Jumlah entri", value: fmt(entries.length), unit: "entri" },
+            { label: "Total tanaman hidup", value: fmt(totalPohon), unit: "batang" },
+            { label: "Total potensi karbon", value: fmt1(totalCo2e), unit: CO2E, accent: true },
+          ].map((it, i) => (
+            <div key={it.label} style={{ flex: "1 1 180px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 22, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                {it.value}
+                <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4" }}>
+          {byJenis.map((c, i) => (
+            <div key={c.key} style={{ flex: "1 1 160px", padding: "16px 18px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                <span style={{ width: 9, height: 9, background: c.color, display: "inline-block" }} />
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>{c.key}</span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 19, color: "#1B2A22" }}>
+                {fmt1(c.total)} <span style={{ fontSize: 11.5, fontWeight: 400, color: "#5C5A4E" }}>{CO2E}</span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 2 }}>
+                {fmt(c.pohon)} batang &middot; {c.entriCount} entri
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginTop: 18, border: "1px solid #D6D2C4", overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, minWidth: 640 }}>
+          <thead>
+            <tr>
+              {["Tanggal", "IP", "Jenis lahan", "Jumlah tanaman", "Diameter (cm)", "Tinggi (m)", `Potensi karbon (${CO2E})`].map((h) => (
+                <th key={h} style={{ textAlign: h === "Tanggal" || h === "IP" || h === "Jenis lahan" ? "left" : "right", padding: "9px 14px", color: "#5C5A4E", fontWeight: 500, fontSize: 11.5, borderBottom: "1px solid #D6D2C4" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {(viewMode === "perjenis" ? [...entries].sort((a, b) => a.jenis.localeCompare(b.jenis)) : entries).map((e) => (
+              <tr key={e.id} style={{ borderTop: "1px solid #E5E2D6" }}>
+                <td style={{ padding: "9px 14px", color: "#8A8677" }}>{e.tanggal}</td>
+                <td style={{ padding: "9px 14px", color: "#1B2A22" }}>{e.ip}</td>
+                <td style={{ padding: "9px 14px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 8, height: 8, background: KARBON_CATEGORIES.find((c) => c.key === e.jenis)?.color, display: "inline-block" }} />
+                    {e.jenis}
+                  </span>
+                </td>
+                <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt(e.jumlah)}</td>
+                <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(e.diameter)}</td>
+                <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(e.tinggi)}</td>
+                <td style={{ padding: "9px 14px", color: "#2C4A3A", fontWeight: 500, textAlign: "right" }}>{fmt1(e.totalCo2eTon)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
+
 
 // --- Pelaporan (Reporting) ----------------------------------------------------
 function ReportingView() {
@@ -1951,7 +2332,7 @@ export default function App() {
         )}
 
         {tab === "beranda" && <BerandaView year={year} setTab={setTab} />}
-        {tab === "pengukuran" && <MeasurementView year={year} setYear={setYear} />}
+        {tab === "pengukuran" && <MeasurementView />}
         {tab === "pelaporan" && <ReportingView />}
         {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
         {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
