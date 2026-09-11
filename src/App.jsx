@@ -178,6 +178,101 @@ const FOLU_PROGRAM_FACTS = {
   sourceNote: "Disusun dari siaran pers dan laman resmi Kementerian Lingkungan Hidup dan Kehutanan (KLHK), per pengetahuan hingga awal 2026.",
 };
 
+// ---------------------------------------------------------------------------
+// Additional REAL data extracted from the full Laporan Tahunan FOLU NC-1 TA
+// 2025 (233 halaman): penerima manfaat (Tabel 6.7), realisasi anggaran
+// (Tabel 4.1), capaian fisik aforestasi/reforestasi (Tabel 6.8), struktur 5
+// Bidang, Theory of Change, dan kemitraan Indonesia-Norwegia (Bab 1.3).
+// ---------------------------------------------------------------------------
+const FOLU_BENEFICIARIES = {
+  total: 121408,
+  lakiLaki: 81240,
+  perempuan: 40168,
+  categories: [
+    { label: "Kelompok Muda", total: 54724, pct: 45.07, l: 28131, p: 26593 },
+    { label: "Petani / KTH / KUPS", total: 47938, pct: 39.49, l: 37794, p: 10144 },
+    { label: "Pemangku Kepentingan", total: 6002, pct: 4.94, l: null, p: null },
+    { label: "SDM KLHK", total: 4433, pct: 3.65, l: null, p: null },
+    { label: "Unsur Masyarakat Lainnya", total: 3981, pct: 3.28, l: null, p: null },
+    { label: "Masyarakat Adat", total: 2093, pct: 1.72, l: 1866, p: 227 },
+    { label: "Masyarakat Peduli Api", total: 1210, pct: 1.0, l: null, p: null },
+    { label: "Akademisi", total: 1027, pct: 0.85, l: 517, p: 510 },
+  ],
+  ipCount: 19,
+};
+
+const FOLU_BUDGET_2025 = {
+  totalPaguKeseluruhan: 797417840873,
+  paguAwp2025: 316572685803,
+  realisasi2025: 298002173775,
+  persenRealisasi: 94.13,
+  sisaAnggaran: 18570512028,
+  perProgram: [
+    { program: "Program I \u2014 Pengelolaan Hutan Lestari", pagu: 143156726582, awp: 68701338491, realisasi: 65224112407, persen: 94.94 },
+    { program: "Program II \u2014 Peningkatan Cadangan Karbon", pagu: 507000000000, awp: 205010630718, realisasi: 194680512018, persen: 94.96 },
+    { program: "Program III \u2014 Konservasi", pagu: 10000000000, awp: 6480659925, realisasi: 5563137939, persen: 85.84 },
+    { program: "Program V \u2014 Instrumen dan Informasi", pagu: 104162501946, awp: 21776110658, realisasi: 18760597557, persen: 86.15 },
+    { program: "PMU NC-1", pagu: 33098612345, awp: 14603946011, realisasi: 13773813854, persen: 94.32 },
+  ],
+};
+
+// Tabel 6.8 \u2014 Capaian fisik Direct Mitigation dari Kegiatan Penanaman
+// 2024\u20132025. Ini adalah tabel fisik (target/realisasi/aforestasi/reforestasi)
+// yang TERPISAH dari Tabel 6.9 (perhitungan adjustment karbon) sehingga
+// totalnya sedikit berbeda (20.593 ha vs 19.006 ha) \u2014 keduanya real, hanya
+// cakupan/potongan datanya tidak identik.
+const NC1_PHYSICAL_2025 = {
+  targetHa: 20593,
+  realisasiHa: 18672,
+  aforestasiHa: 1923,
+  reforestasiHa: 16749,
+  pctOfTarget: 90.67,
+  pctReforestasiOfRealisasi: 89.7,
+};
+
+const FOLU_BIDANG = [
+  { key: "I", label: "Bidang I \u2014 Pengelolaan Hutan Lestari", desc: "Mencegah dan mengurangi deforestasi serta degradasi hutan." },
+  { key: "II", label: "Bidang II \u2014 Peningkatan Cadangan Karbon", desc: "Rehabilitasi hutan dan lahan, rehabilitasi mangrove, dan pemulihan ekosistem (basis data NC-1 di dashboard ini)." },
+  { key: "III", label: "Bidang III \u2014 Konservasi", desc: "Konservasi keanekaragaman hayati dan perlindungan ekosistem bernilai penting." },
+  { key: "IV", label: "Bidang IV \u2014 Pengelolaan Ekosistem Gambut", desc: "Restorasi dan perbaikan tata air ekosistem gambut." },
+  { key: "V", label: "Bidang V \u2014 Instrumen dan Informasi", desc: "Peningkatan kapasitas, penegakan hukum, dan penguatan tata kelola pendukung." },
+];
+
+const FOLU_OUTCOMES = [
+  { key: 1, label: "Outcome 1: Pengurangan Emisi GRK", desc: "Aksi mitigasi sektor FOLU: pengurangan deforestasi/degradasi, rehabilitasi hutan dan lahan, rehabilitasi mangrove, restorasi gambut, dan pengelolaan hutan lestari." },
+  { key: 2, label: "Outcome 2: Akses Masyarakat & Manfaat Ekosistem", desc: "Penguatan perhutanan sosial, peningkatan kapasitas kelompok masyarakat, dan manfaat ekonomi dari pengelolaan sumber daya hutan berkelanjutan." },
+  { key: 3, label: "Outcome 3: Tata Kelola Karbon & Hutan", desc: "Penguatan kebijakan, kelembagaan, sistem informasi, kapasitas SDM, penegakan hukum, dan MRV (monitoring, reporting, verification)." },
+];
+
+const FOLU_NORWAY = {
+  mouDate: "12 September 2022",
+  mouParties: "KLHK (Indonesia) dan Ministry of Climate and Environment/MCE (Norwegia)",
+  mouDuration: "5 tahun",
+  agreementDate: "19 Oktober 2022",
+  firstContributionUsd: 56000000,
+  firstContributionTonCo2e: 11200000,
+  firstContributionPeriod: "2016\u20132017",
+  fundManager: "Badan Pengelolaan Dana Lingkungan Hidup (BPDLH)",
+};
+
+const FOLU_MITIGATION_ACTIONS = [
+  "Pengurangan laju deforestasi lahan mineral",
+  "Pengurangan laju deforestasi lahan gambut dan mangrove",
+  "Pengurangan laju degradasi hutan-hutan lahan mineral",
+  "Pengurangan laju degradasi hutan lahan gambut dan mangrove",
+  "Pembangunan hutan tanaman",
+  "Pengelolaan hutan lestari",
+  "Rehabilitasi dengan rotasi",
+  "Rehabilitasi non-rotasi",
+  "Restorasi gambut dan perbaikan tata air gambut",
+  "Rehabilitasi mangrove dan aforestasi pada kawasan bekas tambang",
+  "Konservasi keanekaragaman hayati",
+  "Perhutanan sosial",
+  "Introduksi replikasi ekosistem, ruang terbuka hijau, dan ekoriparian",
+  "Pengembangan dan konsolidasi hutan adat",
+  "Pengawasan dan law enforcement dalam mendukung perlindungan dan pengamanan kawasan hutan",
+];
+
 const NEWS = [
   {
     title: "Verifikasi capaian pengurangan emisi tahun 2021 diselesaikan",
@@ -1870,6 +1965,48 @@ function BerandaView({ year, setTab }) {
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 8 }}>{FOLU_PROGRAM_FACTS.sourceNote}</div>
         </div>
 
+        <div style={{ marginTop: 26 }}>
+          <SectionTitle>5 bidang program & 3 outcome (Theory of Change)</SectionTitle>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 16 }}>
+            {FOLU_BIDANG.map((b) => (
+              <div key={b.key} style={{ border: "1px solid #D6D2C4", padding: 14 }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13, color: "#1B2A22", marginBottom: 5 }}>{b.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", lineHeight: 1.5 }}>{b.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {FOLU_OUTCOMES.map((o, i) => (
+              <div key={o.key} style={{ padding: "13px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13, color: "#2C4A3A", marginBottom: 3 }}>{o.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", lineHeight: 1.55 }}>{o.desc}</div>
+              </div>
+            ))}
+          </div>
+          <details style={{ marginTop: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>
+            <summary style={{ cursor: "pointer", color: "#2C4A3A" }}>Lihat 15 kegiatan aksi mitigasi IFNS 2030</summary>
+            <ol style={{ marginTop: 8, paddingLeft: 20, lineHeight: 1.7 }}>
+              {FOLU_MITIGATION_ACTIONS.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ol>
+          </details>
+        </div>
+
+        <div style={{ marginTop: 26 }}>
+          <SectionTitle>Kemitraan Indonesia&ndash;Norwegia</SectionTitle>
+          <div style={{ border: "1px solid #D6D2C4", padding: 18, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#5C5A4E", lineHeight: 1.7 }}>
+            Pada <strong>{FOLU_NORWAY.mouDate}</strong>, {FOLU_NORWAY.mouParties} menandatangani MoU "Partnership in Support of
+            Indonesia's Efforts to Reduce Greenhouse Gas Emissions from Forestry and Other Land Use" untuk jangka waktu{" "}
+            {FOLU_NORWAY.mouDuration}. Pada <strong>{FOLU_NORWAY.agreementDate}</strong>, kedua pihak menandatangani Perjanjian
+            Kontribusi dengan nilai kontribusi berbasis hasil pertama (first result-based contribution) sebesar{" "}
+            <strong>USD {fmt(FOLU_NORWAY.firstContributionUsd / 1000000)} juta</strong>, atas reduksi emisi terverifikasi sebesar{" "}
+            <strong>{fmt1(FOLU_NORWAY.firstContributionTonCo2e / 1000000)} juta {CO2E}</strong> selama periode {FOLU_NORWAY.firstContributionPeriod}.
+            Dana kerja sama ini dikelola oleh {FOLU_NORWAY.fundManager}; Proyek FOLU NC-1 yang datanya ditampilkan pada dashboard ini
+            merupakan bagian dari Kontribusi Norwegia Tahap I tersebut.
+          </div>
+        </div>
+
         <div style={{ marginTop: 30 }}>
           <SectionTitle>Contoh capaian riil: NC-1, peningkatan cadangan karbon 2025</SectionTitle>
           <Note tone="neutral">
@@ -1915,6 +2052,104 @@ function BerandaView({ year, setTab }) {
                 {label}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Capaian fisik penanaman 2025 (aforestasi vs. reforestasi)</SectionTitle>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677", marginTop: -8, marginBottom: 10 }}>
+            Data riil dari Tabel 6.8 (Capaian Fisik Direct Mitigation) &mdash; tabel fisik terpisah dari Tabel 6.9, sehingga
+            totalnya sedikit berbeda dari angka adjustment karbon di atas.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4" }}>
+            {[
+              { label: "Target penanaman", value: fmt(NC1_PHYSICAL_2025.targetHa), unit: "ha" },
+              { label: "Realisasi (% target)", value: `${fmt(NC1_PHYSICAL_2025.realisasiHa)} ha`, unit: `${NC1_PHYSICAL_2025.pctOfTarget}%` },
+              { label: "Aforestasi", value: fmt(NC1_PHYSICAL_2025.aforestasiHa), unit: "ha" },
+              { label: "Reforestasi", value: fmt(NC1_PHYSICAL_2025.reforestasiHa), unit: `ha (${NC1_PHYSICAL_2025.pctReforestasiOfRealisasi}%)`, accent: true },
+            ].map((it, i) => (
+              <div key={it.label} style={{ flex: "1 1 170px", padding: "16px 18px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 19, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                  {it.value}
+                  <span style={{ fontSize: 11.5, fontWeight: 400, color: "#5C5A4E", marginLeft: 4 }}>{it.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Penerima manfaat (data riil, Tabel 6.7)</SectionTitle>
+          <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginBottom: 12 }}>
+            {[
+              { label: "Total penerima manfaat", value: fmt(FOLU_BENEFICIARIES.total), unit: `dari ${FOLU_BENEFICIARIES.ipCount} IP`, accent: true },
+              { label: "Laki-laki", value: fmt(FOLU_BENEFICIARIES.lakiLaki), unit: `${((FOLU_BENEFICIARIES.lakiLaki / FOLU_BENEFICIARIES.total) * 100).toFixed(1)}%` },
+              { label: "Perempuan", value: fmt(FOLU_BENEFICIARIES.perempuan), unit: `${((FOLU_BENEFICIARIES.perempuan / FOLU_BENEFICIARIES.total) * 100).toFixed(1)}%` },
+            ].map((it, i) => (
+              <div key={it.label} style={{ flex: "1 1 190px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 22, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                  {it.value}
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {FOLU_BENEFICIARIES.categories.map((c, i) => (
+              <div key={c.label} style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6", gap: 12 }}>
+                <div style={{ flex: "1 1 200px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#1B2A22" }}>{c.label}</div>
+                <div style={{ flex: "2 1 200px", background: "#EDEAD9", height: 8, position: "relative" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${c.pct}%`, background: "#2C4A3A" }} />
+                </div>
+                <div style={{ flex: "0 0 90px", textAlign: "right", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>
+                  {fmt(c.total)} ({c.pct}%)
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <SectionTitle>Realisasi anggaran 2025 (data riil, Tabel 4.1)</SectionTitle>
+          <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginBottom: 12 }}>
+            {[
+              { label: "Pagu AWP 2025", value: `Rp ${fmt1(FOLU_BUDGET_2025.paguAwp2025 / 1e9)} M` },
+              { label: "Realisasi 2025", value: `Rp ${fmt1(FOLU_BUDGET_2025.realisasi2025 / 1e9)} M`, unit: `${FOLU_BUDGET_2025.persenRealisasi}%`, accent: true },
+              { label: "Sisa anggaran", value: `Rp ${fmt1(FOLU_BUDGET_2025.sisaAnggaran / 1e9)} M` },
+            ].map((it, i) => (
+              <div key={it.label} style={{ flex: "1 1 190px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 20, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                  {it.value}
+                  {it.unit && <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5 }}>
+              <thead>
+                <tr>
+                  {["Program", "Pagu AWP 2025 (Rp M)", "Realisasi (Rp M)", "% Realisasi"].map((h) => (
+                    <th key={h} style={{ textAlign: h === "Program" ? "left" : "right", padding: "9px 14px", color: "#5C5A4E", fontWeight: 500, fontSize: 11.5, borderBottom: "1px solid #D6D2C4" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {FOLU_BUDGET_2025.perProgram.map((p) => (
+                  <tr key={p.program} style={{ borderTop: "1px solid #E5E2D6" }}>
+                    <td style={{ padding: "9px 14px", color: "#1B2A22" }}>{p.program}</td>
+                    <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(p.awp / 1e9)}</td>
+                    <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(p.realisasi / 1e9)}</td>
+                    <td style={{ padding: "9px 14px", color: "#2C4A3A", fontWeight: 500, textAlign: "right" }}>{p.persen}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
