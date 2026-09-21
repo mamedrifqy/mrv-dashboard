@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import L from "leaflet";
+import * as turf from "@turf/turf";
+import * as shpwrite from "@mapbox/shp-write";
+import shp from "shpjs";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
+import wellknown from "wellknown";
 import {
   BarChart,
   Bar,
@@ -28,6 +34,9 @@ import {
   FileText,
   Shield,
   Calculator,
+  Download,
+  Upload,
+  MapPinned,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -497,6 +506,7 @@ const NC1_TIPE_COLOR = {
 // AOIs from the same IP/province don't sit exactly on top of each other.
 const NC1_AOI_FEATURES = (() => {
   const usedAt = {};
+  const roStatusCycle = ["Terverifikasi", "Terverifikasi", "Terverifikasi", "Perlu Klarifikasi", "Overlap Terdeteksi", "Terverifikasi", "Di Luar RO"];
   return NC1_IP_TABLE.map((row, i) => {
     const pName = firstProvince(row.provinsi);
     const base = pName ? PROVINSI_COORD[pName] : [-2.0, 118.0];
@@ -516,6 +526,10 @@ const NC1_AOI_FEATURES = (() => {
       real2025: row.real2025,
       baru2025: row.baru2025,
       color: NC1_TIPE_COLOR[row.tipeLahan] || "#2C4A3A",
+      // Dummy RO (Rencana Operasional) overlap status \u2014 illustrative only.
+      // The real RO reference boundary was not provided in the source report,
+      // so this reuses the same status categories as the NC-2&3/NC-4 sites.
+      roStatus: roStatusCycle[i % roStatusCycle.length],
     });
   });
 })();
@@ -863,11 +877,12 @@ function titleCase(s) {
 
 // Real interactive map (Leaflet): satellite imagery basemap, real Indonesia
 // province boundaries (GeoJSON), zoom/pan, and clickable site markers.
-function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, setSelectedAoi, height }) {
+function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, setSelectedAoi, height, colorMode, uploadedFeatures }) {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
   const aoiLayerRef = useRef(null);
+  const uploadedLayerRef = useRef(null);
   const geoLayerRef = useRef(null);
   const sitesRef = useRef(sites);
   const setSelectedRef = useRef(setSelected);
@@ -1018,10 +1033,11 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
       {
         style: (feature) => {
           const active = selectedAoi && selectedAoi.ip === feature.properties.ip && selectedAoi.tipeLahan === feature.properties.tipeLahan;
+          const color = colorMode === "status" ? STATUS_META[feature.properties.roStatus]?.color || "#5C5A4E" : feature.properties.color;
           return {
-            color: feature.properties.color,
+            color,
             weight: active ? 2.5 : 1.3,
-            fillColor: feature.properties.color,
+            fillColor: color,
             fillOpacity: active ? 0.55 : 0.32,
           };
         },
@@ -1034,6 +1050,7 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
               `<div style="display:flex;justify-content:space-between;margin-top:6px"><span style="color:#8A8677">Tipe lahan</span><span>${p.tipeLahan}</span></div>` +
               `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Realisasi 2025</span><span>${p.real2025 != null ? fmt1(p.real2025) : "\u2013"} ha</span></div>` +
               `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Adjustment 2025</span><span>${p.baru2025 != null ? fmt1(p.baru2025) : "\u2013"} ${CO2E}</span></div>` +
+              `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Status RO</span><span>${p.roStatus || "\u2013"}</span></div>` +
               `</div>`
           );
           fLayer.on("click", () => setSelectedAoiRef.current && setSelectedAoiRef.current(p));
@@ -1048,9 +1065,173 @@ function LeafletMap({ sites, selected, setSelected, aoiFeatures, selectedAoi, se
     } catch (e) {
       /* no-op */
     }
-  }, [aoiFeatures, selectedAoi]);
+  }, [aoiFeatures, selectedAoi, colorMode]);
+
+  // Render uploaded data (GeoJSON/SHP/CSV) with its computed RO-overlap
+  // result, styled distinctly (dashed outline) from the AOI layer.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (uploadedLayerRef.current) {
+      uploadedLayerRef.current.remove();
+      uploadedLayerRef.current = null;
+    }
+    if (!uploadedFeatures || uploadedFeatures.length === 0) return;
+
+    const layer = L.geoJSON(
+      { type: "FeatureCollection", features: uploadedFeatures },
+      {
+        style: (feature) => ({
+          color: feature.properties.__overlap ? "#A23B3B" : "#2451A3",
+          weight: 2.5,
+          dashArray: "6 4",
+          fillColor: feature.properties.__overlap ? "#A23B3B" : "#2451A3",
+          fillOpacity: 0.22,
+        }),
+        onEachFeature: (feature, fLayer) => {
+          const p = feature.properties;
+          fLayer.bindPopup(
+            `<div style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;min-width:200px">` +
+              `<div style="font-weight:600;font-size:13.5px;margin-bottom:6px;color:#1B2A22">${p.__name || "Data unggahan"}</div>` +
+              `<div style="display:flex;justify-content:space-between;margin-top:4px"><span style="color:#8A8677">Hasil cek</span><span style="color:${p.__overlap ? "#A23B3B" : "#2451A3"};font-weight:600">${p.__overlap ? "Overlap terdeteksi" : "Di luar cakupan AOI"}</span></div>` +
+              (p.__overlapWith ? `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Beririsan dengan</span><span>${p.__overlapWith}</span></div>` : "") +
+              `</div>`
+          );
+        },
+      }
+    ).addTo(map);
+    uploadedLayerRef.current = layer;
+
+    try {
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 });
+    } catch (e) {
+      /* no-op */
+    }
+  }, [uploadedFeatures]);
 
   return <div ref={mapElRef} style={{ width: "100%", height: height || 480, background: "#EAEBDF" }} />;
+}
+
+// ---------------------------------------------------------------------------
+// Upload parsing: accepts GeoJSON (.geojson/.json), Shapefile (.zip), or CSV
+// with a WKT geometry column, and normalizes to a GeoJSON FeatureCollection.
+// ---------------------------------------------------------------------------
+async function parseUploadedFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".geojson") || name.endsWith(".json")) {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (data.type === "FeatureCollection") return data.features;
+    if (data.type === "Feature") return [data];
+    if (data.type) return [{ type: "Feature", properties: {}, geometry: data }];
+    throw new Error("Format GeoJSON tidak dikenali.");
+  }
+  if (name.endsWith(".zip")) {
+    const buf = await file.arrayBuffer();
+    const data = await shp(buf);
+    const fc = Array.isArray(data) ? data[0] : data;
+    return fc.features || [];
+  }
+  if (name.endsWith(".csv")) {
+    const text = await file.text();
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+    const wktKey = Object.keys(parsed.data[0] || {}).find((k) => k.toLowerCase().includes("wkt"));
+    if (!wktKey) throw new Error("Kolom WKT tidak ditemukan pada CSV. Pastikan ada kolom bernama 'WKT' atau 'wkt_geom'.");
+    return parsed.data
+      .filter((row) => row[wktKey])
+      .map((row) => {
+        const geometry = wellknown.parse(row[wktKey]);
+        const properties = { ...row };
+        delete properties[wktKey];
+        return { type: "Feature", properties, geometry };
+      });
+  }
+  throw new Error("Format file tidak didukung. Gunakan .geojson, .json, .zip (shapefile), atau .csv (dengan kolom WKT).");
+}
+
+// Checks each uploaded feature against the reference AOI polygons (standing
+// in for the real RO/Rencana Operasional boundary, which was not provided in
+// the source report) using real geometric intersection (turf.booleanIntersects).
+function checkOverlapAgainstReference(uploadedFeatures, referenceFeatures) {
+  return uploadedFeatures.map((f, i) => {
+    let overlap = false;
+    let overlapWith = null;
+    if (f.geometry) {
+      for (const ref of referenceFeatures) {
+        try {
+          if (turf.booleanIntersects(f, ref)) {
+            overlap = true;
+            overlapWith = ref.properties.ip;
+            break;
+          }
+        } catch (e) {
+          /* mismatched/invalid geometry pair \u2014 skip */
+        }
+      }
+    }
+    return {
+      ...f,
+      properties: {
+        ...f.properties,
+        __name: f.properties?.name || f.properties?.NAME || f.properties?.Name || `Fitur ${i + 1}`,
+        __overlap: overlap,
+        __overlapWith: overlapWith,
+      },
+    };
+  });
+}
+
+function downloadGeoJSON(features, filename) {
+  const blob = new Blob([JSON.stringify({ type: "FeatureCollection", features }, null, 2)], { type: "application/geo+json" });
+  saveAs(blob, `${filename}.geojson`);
+}
+
+function downloadShapefile(features, filename) {
+  const geojson = { type: "FeatureCollection", features };
+  shpwrite.download(geojson, { folder: filename, types: { polygon: filename } });
+}
+
+function downloadCsvWkt(features, filename) {
+  const rows = features.map((f) => ({ ...f.properties, WKT: wellknown.stringify(f) }));
+  const csv = Papa.unparse(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  saveAs(blob, `${filename}.csv`);
+}
+
+function DownloadMenu({ features, filename }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", color: "#1B2A22", border: "1px solid #D6D2C4", padding: "7px 12px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, cursor: "pointer" }}
+      >
+        <Download size={13} /> Unduh data
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, background: "#fff", border: "1px solid #D6D2C4", minWidth: 180, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+          {[
+            { label: "GeoJSON (.geojson)", fn: () => downloadGeoJSON(features, filename) },
+            { label: "CSV \u2014 Atribut + WKT (.csv)", fn: () => downloadCsvWkt(features, filename) },
+            { label: "Shapefile (.zip)", fn: () => downloadShapefile(features, filename) },
+          ].map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => {
+                opt.fn();
+                setOpen(false);
+              }}
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 14px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#1B2A22", background: "none", border: "none", borderTop: "1px solid #E5E2D6", cursor: "pointer" }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function MonevBar({ label, pct, ambang }) {
@@ -1116,10 +1297,86 @@ function AoiListItem({ row, active, onClick }) {
   );
 }
 
+function OverlapUploadPanel({ referenceFeatures, onResult }) {
+  const [uploadedFeatures, setUploadedFeatures] = useState(null);
+  const [error, setError] = useState(null);
+  const [fileName, setFileName] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setFileName(file.name);
+    try {
+      const features = await parseUploadedFile(file);
+      if (!features.length) throw new Error("Tidak ada fitur geometri yang terbaca dari file ini.");
+      const checked = checkOverlapAgainstReference(features, referenceFeatures);
+      setUploadedFeatures(checked);
+      onResult && onResult(checked);
+    } catch (err) {
+      setError(err.message || "Gagal membaca file.");
+      setUploadedFeatures(null);
+      onResult && onResult(null);
+    }
+  };
+
+  const overlapCount = uploadedFeatures ? uploadedFeatures.filter((f) => f.properties.__overlap).length : 0;
+
+  return (
+    <div style={{ border: "1px solid #D6D2C4", padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <MapPinned size={15} color="#2C4A3A" />
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "#1B2A22" }}>Unggah data & cek overlap RO</div>
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", marginBottom: 12, lineHeight: 1.55 }}>
+        Unggah GeoJSON (.geojson/.json), Shapefile (.zip), atau CSV dengan kolom WKT untuk memeriksa apakah lahan tersebut
+        beririsan secara geometris dengan AOI yang sedang ditampilkan.
+      </div>
+      <input ref={fileInputRef} type="file" accept=".geojson,.json,.zip,.csv" onChange={handleFile} style={{ display: "none" }} />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#1B2A22", color: "#EEF0E7", border: "none", padding: "9px 16px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, cursor: "pointer" }}
+      >
+        <Upload size={14} /> Pilih file
+      </button>
+      {fileName && <span style={{ marginLeft: 10, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>{fileName}</span>}
+
+      {error && <div style={{ marginTop: 12, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#A23B3B" }}>{error}</div>}
+
+      {uploadedFeatures && !error && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", marginBottom: 8 }}>
+            {uploadedFeatures.length} fitur terbaca &middot; <strong style={{ color: overlapCount ? "#A23B3B" : "#2451A3" }}>{overlapCount} beririsan dengan AOI</strong>,{" "}
+            {uploadedFeatures.length - overlapCount} di luar cakupan AOI yang ditampilkan.
+          </div>
+          <div style={{ border: "1px solid #D6D2C4" }}>
+            {uploadedFeatures.map((f, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5 }}>
+                <span style={{ color: "#1B2A22" }}>{f.properties.__name}</span>
+                <span style={{ color: f.properties.__overlap ? "#A23B3B" : "#2451A3", fontWeight: 600 }}>
+                  {f.properties.__overlap ? `Overlap dengan ${f.properties.__overlapWith}` : "Di luar AOI"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 8, lineHeight: 1.5 }}>
+            Catatan: AOI yang dipakai sebagai acuan di sini adalah poligon dummy NC-1 pada dashboard ini, bukan shapefile Rencana
+            Operasional (RO) resmi &mdash; laporan sumber tidak menyertakan geometri RO. Perhitungan irisan geometris (turf.js)
+            sendiri sudah nyata; yang ilustratif hanya acuannya.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   const isNc1 = pmuFilter === "NC-1";
   const isNarrow = useIsNarrow();
   const mapHeight = isNarrow ? 320 : 480;
+  const [colorMode, setColorMode] = useState("jenis");
+  const [uploadedFeatures, setUploadedFeatures] = useState(null);
 
   const nc1Rows = isNc1 ? (ipFilter && ipFilter !== "Semua" ? NC1_IP_TABLE.filter((r) => r.ip === ipFilter) : NC1_IP_TABLE) : [];
 
@@ -1133,20 +1390,41 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
     const hasIpFilter = ipFilter && ipFilter !== "Semua";
     return (
       <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>Warnai AOI berdasarkan</div>
+          <ToggleGroup
+            value={colorMode}
+            onChange={setColorMode}
+            options={[
+              { value: "jenis", label: "Jenis lahan" },
+              { value: "status", label: "Status overlap RO" },
+            ]}
+          />
+        </div>
+
+        <OverlapUploadPanel referenceFeatures={nc1Features || []} onResult={setUploadedFeatures} />
+
         <div style={{ border: "1px solid #D6D2C4", position: "relative" }}>
           <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px", maxWidth: "80%" }}>
             {hasIpFilter ? `Menampilkan lokasi ${ipFilter}` : "Semua AOI NC-1 (Tabel 6.9) \u2014 pilih IP di atas untuk zoom ke lokasinya"}
           </div>
-          <LeafletMap sites={[]} aoiFeatures={nc1Features} height={mapHeight} />
+          <LeafletMap sites={[]} aoiFeatures={nc1Features} height={mapHeight} colorMode={colorMode} uploadedFeatures={uploadedFeatures} />
         </div>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", padding: "10px 4px 16px" }}>
-          {Object.entries(NC1_TIPE_COLOR).map(([label, color]) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
-              <span style={{ width: 9, height: 9, background: color, opacity: 0.6, border: `1px solid ${color}`, display: "inline-block" }} />
-              {label}
-            </div>
-          ))}
+          {colorMode === "jenis"
+            ? Object.entries(NC1_TIPE_COLOR).map(([label, color]) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
+                  <span style={{ width: 9, height: 9, background: color, opacity: 0.6, border: `1px solid ${color}`, display: "inline-block" }} />
+                  {label}
+                </div>
+              ))
+            : Object.entries(STATUS_META).map(([label, meta]) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
+                  <span style={{ width: 9, height: 9, background: meta.color, opacity: 0.6, border: `1px solid ${meta.color}`, display: "inline-block" }} />
+                  {label}
+                </div>
+              ))}
         </div>
 
         {!hasIpFilter ? (
@@ -1157,43 +1435,54 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
           </div>
         ) : (
           <div>
-            {nc1Rows.map((row, i) => (
-              <div key={`${row.ip}-${row.tipeLahan}-${i}`} style={{ border: "1px solid #D6D2C4", padding: 20, marginBottom: 14 }}>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#2C4A3A", marginBottom: 6 }}>
-                  PMU NC-1 &middot; {row.provinsi}
-                </div>
-                <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 19, color: "#1B2A22", marginBottom: 10, lineHeight: 1.3 }}>{row.ip}</div>
-                <div style={{ display: "inline-block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#fff", background: NC1_TIPE_COLOR[row.tipeLahan], padding: "3px 9px" }}>
-                  {row.tipeLahan}
-                </div>
+            {nc1Rows.map((row, i) => {
+              const feature = (nc1Features || []).find((f) => f.properties.ip === row.ip && f.properties.tipeLahan === row.tipeLahan);
+              return (
+                <div key={`${row.ip}-${row.tipeLahan}-${i}`} style={{ border: "1px solid #D6D2C4", padding: 20, marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#2C4A3A", marginBottom: 6 }}>
+                        PMU NC-1 &middot; {row.provinsi}
+                      </div>
+                      <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 19, color: "#1B2A22", marginBottom: 10, lineHeight: 1.3 }}>{row.ip}</div>
+                      <div style={{ display: "inline-block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#fff", background: NC1_TIPE_COLOR[row.tipeLahan], padding: "3px 9px" }}>
+                        {row.tipeLahan}
+                      </div>{" "}
+                      <span style={{ display: "inline-block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#fff", background: STATUS_META[feature?.properties?.roStatus]?.color || "#5C5A4E", padding: "3px 9px" }}>
+                        {feature?.properties?.roStatus || "\u2013"}
+                      </span>
+                    </div>
+                    {feature && <DownloadMenu features={[feature]} filename={`${row.ip}-${row.tipeLahan}`.replace(/[^a-z0-9]+/gi, "_")} />}
+                  </div>
 
-                <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: isNarrow ? "1fr 1fr" : "repeat(4, 1fr)", rowGap: 14, columnGap: 12 }}>
-                  <Field label="Target luasan" value={row.target != null ? `${fmt1(row.target)} ha` : "\u2013"} />
-                  <Field label="Realisasi 2025" value={row.real2025 != null ? `${fmt1(row.real2025)} ha` : "\u2013"} />
-                  <Field label="Realisasi 2024" value={row.real2024 != null ? `${fmt1(row.real2024)} ha` : "\u2013"} />
-                  <Field label="Adjustment karbon 2025" value={row.baru2025 != null ? `${fmt1(row.baru2025)} ${CO2E}` : "\u2013"} />
-                </div>
+                  <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: isNarrow ? "1fr 1fr" : "repeat(4, 1fr)", rowGap: 14, columnGap: 12 }}>
+                    <Field label="Target luasan" value={row.target != null ? `${fmt1(row.target)} ha` : "\u2013"} />
+                    <Field label="Realisasi 2025" value={row.real2025 != null ? `${fmt1(row.real2025)} ha` : "\u2013"} />
+                    <Field label="Realisasi 2024" value={row.real2024 != null ? `${fmt1(row.real2024)} ha` : "\u2013"} />
+                    <Field label="Adjustment karbon 2025" value={row.baru2025 != null ? `${fmt1(row.baru2025)} ${CO2E}` : "\u2013"} />
+                  </div>
 
-                <div style={{ marginTop: 22 }}>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginBottom: 4 }}>
-                    Kelompok / petak (contoh)
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginBottom: 10 }}>
-                    Rincian kelompok tani, desa, dan progres monev di bawah ini bersifat ilustratif (dummy) &mdash; laporan sumber
-                    hanya melaporkan sampai level implementing partner.
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr", gap: 10 }}>
-                    {(NC1_PETAK_BY_ROW[`${row.ip}__${row.tipeLahan}`] || []).map((petak) => (
-                      <PetakCard key={petak.id} petak={petak} />
-                    ))}
+                  <div style={{ marginTop: 22 }}>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, fontWeight: 600, color: "#1B2A22", marginBottom: 4 }}>
+                      Kelompok / petak (contoh)
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginBottom: 10 }}>
+                      Rincian kelompok tani, desa, dan progres monev di bawah ini bersifat ilustratif (dummy) &mdash; laporan sumber
+                      hanya melaporkan sampai level implementing partner.
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr", gap: 10 }}>
+                      {(NC1_PETAK_BY_ROW[`${row.ip}__${row.tipeLahan}`] || []).map((petak) => (
+                        <PetakCard key={petak.id} petak={petak} />
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <Note tone="neutral">
               Data target/realisasi/karbon di atas bersumber dari Tabel 6.9, Laporan Tahunan FOLU NC-1 TA 2025. Bentuk poligon AOI
-              pada peta dan rincian kelompok/petak adalah ilustrasi (dummy) karena laporan sumber tidak menyertakan geometri
-              spasial maupun data sampai level kelompok.
+              pada peta, status overlap RO, dan rincian kelompok/petak adalah ilustrasi (dummy) karena laporan sumber tidak
+              menyertakan geometri spasial, shapefile RO resmi, maupun data sampai level kelompok.
             </Note>
           </div>
         )}
