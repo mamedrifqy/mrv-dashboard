@@ -1234,6 +1234,355 @@ function DownloadMenu({ features, filename }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Generic reusable Leaflet map: fetches a GeoJSON URL once, then re-styles
+// the same cached layer whenever styleFn/popupFn change (e.g. when the user
+// switches the choropleth metric), without re-fetching. Shares the same
+// tile/invalidateSize robustness as LeafletMap.
+// ---------------------------------------------------------------------------
+function GenericGeoMap({ geojsonUrl, styleFn, popupFn, height, onLoaded }) {
+  const mapElRef = useRef(null);
+  const mapRef = useRef(null);
+  const dataLayerRef = useRef(null);
+  const rawDataRef = useRef(null);
+  const styleFnRef = useRef(styleFn);
+  const popupFnRef = useRef(popupFn);
+  const onLoadedRef = useRef(onLoaded);
+  styleFnRef.current = styleFn;
+  popupFnRef.current = popupFn;
+  onLoadedRef.current = onLoaded;
+
+  useEffect(() => {
+    if (mapRef.current || !mapElRef.current) return;
+    const map = L.map(mapElRef.current, {
+      center: [-2.3, 117.5],
+      zoom: 5,
+      minZoom: 4,
+      maxZoom: 18,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      tap: true,
+      inertia: true,
+      zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
+      wheelPxPerZoomLevel: 90,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5,
+    });
+    mapRef.current = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: "abc",
+      maxNativeZoom: 19,
+      maxZoom: 19,
+    }).addTo(map);
+    L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
+
+    const invalidate = () => map.invalidateSize();
+    const raf1 = requestAnimationFrame(invalidate);
+    const t1 = setTimeout(invalidate, 150);
+    const t2 = setTimeout(invalidate, 600);
+    const t3 = setTimeout(invalidate, 1500);
+    window.addEventListener("resize", invalidate);
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(invalidate);
+      ro.observe(mapElRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener("resize", invalidate);
+      if (ro) ro.disconnect();
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  const renderLayer = (fit) => {
+    const map = mapRef.current;
+    if (!map || !rawDataRef.current) return;
+    if (dataLayerRef.current) {
+      dataLayerRef.current.remove();
+      dataLayerRef.current = null;
+    }
+    const layer = L.geoJSON(rawDataRef.current, {
+      style: styleFnRef.current,
+      onEachFeature: (feature, fLayer) => {
+        if (popupFnRef.current) fLayer.bindPopup(popupFnRef.current(feature.properties));
+      },
+    }).addTo(map);
+    dataLayerRef.current = layer;
+    if (fit) {
+      try {
+        const b = layer.getBounds();
+        if (b.isValid()) map.fitBounds(b, { padding: [30, 30] });
+      } catch (e) {
+        /* no-op */
+      }
+    }
+    map.invalidateSize();
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(geojsonUrl)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        rawDataRef.current = data;
+        renderLayer(true);
+        onLoadedRef.current && onLoadedRef.current(data.features);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [geojsonUrl]);
+
+  useEffect(() => {
+    renderLayer(false);
+  }, [styleFn, popupFn]);
+
+  return <div ref={mapElRef} style={{ width: "100%", height: height || 480, background: "#EAEBDF" }} />;
+}
+
+// ---------------------------------------------------------------------------
+// Province-level choropleth metrics, from the real-structure dummy dataset
+// (indonesia_provinsi_folu_ro_emisi.geojson): emisi GRK, RO count, small
+// grants by PMU, KTH count, dan realisasi tanam/karbon NC-1 per provinsi.
+// ---------------------------------------------------------------------------
+const PROVINCE_METRICS = [
+  { key: "NC1_Planting_Area_Ha", label: "Luas Tanam NC-1", unit: "ha", color: "#2C4A3A" },
+  { key: "NC1_Ton_CO2e", label: "Potensi Karbon NC-1", unit: "tCO\u2082e", color: "#2E6B6B" },
+  { key: "JML_RO", label: "Jumlah RO", unit: "RO", color: "#5B4A7A" },
+  { key: "Jumlah_Small_Grant_NC2_3", label: "Small Grants NC-2&3", unit: "unit", color: "#B9791F" },
+  { key: "Jumlah_Small_Grant_NC4", label: "Small Grants NC-4", unit: "unit", color: "#8A6A2E" },
+  { key: "NC1_Jumlah_KTH_2025", label: "Jumlah KTH 2025", unit: "kelompok", color: "#6B4C9A" },
+  { key: "GHG_Pengurangan_Emisi_Selisih_tonCO2e_y", label: "Pengurangan Emisi (Selisih)", unit: "tCO\u2082e", color: "#2451A3" },
+  { key: "TOTAL_ANGGARAN_RP", label: "Total Anggaran", unit: "Rp", color: "#A23B3B" },
+];
+
+function computeQuantileBreaks(values, classes = 5) {
+  const sorted = values.filter((v) => v != null && !Number.isNaN(v)).sort((a, b) => a - b);
+  if (!sorted.length) return [];
+  const breaks = [];
+  for (let i = 1; i < classes; i++) {
+    const idx = Math.min(sorted.length - 1, Math.floor((i / classes) * sorted.length));
+    breaks.push(sorted[idx]);
+  }
+  return breaks;
+}
+
+function classForValue(value, breaks) {
+  let cls = 0;
+  for (const b of breaks) {
+    if (value > b) cls++;
+  }
+  return cls;
+}
+
+const CHOROPLETH_OPACITIES = [0.12, 0.3, 0.48, 0.66, 0.85];
+
+function formatMetricValue(metric, value) {
+  if (value == null) return "\u2013";
+  if (metric.unit === "Rp") return `Rp ${fmt1(value / 1e9)} M`;
+  return `${fmt1(value)} ${metric.unit}`;
+}
+
+function ProvinceChoroplethView() {
+  const [metricKey, setMetricKey] = useState(PROVINCE_METRICS[0].key);
+  const [features, setFeatures] = useState(null);
+  const metric = PROVINCE_METRICS.find((m) => m.key === metricKey);
+
+  const breaks = useMemo(() => {
+    if (!features) return [];
+    return computeQuantileBreaks(features.map((f) => f.properties[metricKey]));
+  }, [features, metricKey]);
+
+  const styleFn = useMemo(() => {
+    return (feature) => {
+      const value = feature.properties[metricKey];
+      const cls = value != null ? classForValue(value, breaks) : 0;
+      return {
+        color: "#5C5A4E",
+        weight: 0.8,
+        fillColor: metric.color,
+        fillOpacity: value != null ? CHOROPLETH_OPACITIES[cls] : 0.05,
+      };
+    };
+  }, [metricKey, breaks, metric.color]);
+
+  const popupFn = (p) => {
+    return (
+      `<div style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;min-width:220px">` +
+      `<div style="font-weight:600;font-size:13.5px;margin-bottom:6px;color:#1B2A22">${p.PROVINSI}</div>` +
+      PROVINCE_METRICS.map(
+        (m) =>
+          `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:#8A8677">${m.label}</span><span style="font-weight:${m.key === metricKey ? 600 : 400}">${formatMetricValue(m, p[m.key])}</span></div>`
+      ).join("") +
+      `</div>`
+    );
+  };
+
+  const totals = useMemo(() => {
+    if (!features) return null;
+    return {
+      planting: features.reduce((a, f) => a + (f.properties.NC1_Planting_Area_Ha || 0), 0),
+      carbon: features.reduce((a, f) => a + (f.properties.NC1_Ton_CO2e || 0), 0),
+      ro: features.reduce((a, f) => a + (f.properties.JML_RO || 0), 0),
+      kth: features.reduce((a, f) => a + (f.properties.NC1_Jumlah_KTH_2025 || 0), 0),
+    };
+  }, [features]);
+
+  return (
+    <div>
+      <Note tone="warn">
+        Peta choropleth ini menggunakan data provinsi dengan atribut <strong>dummy</strong> (dibuat mengikuti struktur data riil:
+        emisi GRK, jumlah RO, small grants per PMU, jumlah KTH, realisasi tanam &amp; karbon NC-1) untuk mengilustrasikan
+        bagaimana ringkasan tingkat provinsi dapat ditampilkan.
+      </Note>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Tampilkan metrik</span>
+        <Select label="Metrik" value={metricKey} onChange={setMetricKey} options={PROVINCE_METRICS.map((m) => m.key)} renderLabel={(k) => PROVINCE_METRICS.find((m) => m.key === k).label} />
+      </div>
+
+      {totals && (
+        <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginBottom: 12 }}>
+          {[
+            { label: "Total luas tanam NC-1", value: fmt1(totals.planting), unit: "ha" },
+            { label: "Total potensi karbon NC-1", value: fmt1(totals.carbon), unit: CO2E },
+            { label: "Total RO", value: fmt(totals.ro), unit: "RO" },
+            { label: "Total KTH 2025", value: fmt(totals.kth), unit: "kelompok" },
+          ].map((it, i) => (
+            <div key={it.label} style={{ flex: "1 1 170px", padding: "14px 16px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 17, color: "#1B2A22" }}>
+                {it.value}
+                <span style={{ fontSize: 11, fontWeight: 400, color: "#5C5A4E", marginLeft: 4 }}>{it.unit}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ border: "1px solid #D6D2C4" }}>
+        <GenericGeoMap geojsonUrl={`${import.meta.env.BASE_URL}indonesia_provinsi_folu_ro_emisi.geojson`} styleFn={styleFn} popupFn={popupFn} onLoaded={(f) => setFeatures(f.map((x) => x))} height={480} />
+      </div>
+
+      {breaks.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 4px", flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#8A8677" }}>{metric.label}:</span>
+          {CHOROPLETH_OPACITIES.map((op, i) => {
+            const lo = i === 0 ? 0 : breaks[i - 1];
+            const hi = breaks[i];
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 12, height: 12, background: metric.color, opacity: op, display: "inline-block", border: "1px solid #D6D2C4" }} />
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#5C5A4E" }}>
+                  {hi != null ? `${fmt1(lo)}\u2013${fmt1(hi)}` : `> ${fmt1(lo)}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlantingSebaranView() {
+  const [features, setFeatures] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("Semua");
+
+  const styleFn = (feature) => {
+    const status = feature.properties.status_ro;
+    const color = status === "Dalam RO" ? "#2C4A3A" : "#A23B3B";
+    return { color, weight: 1.3, fillColor: color, fillOpacity: 0.4 };
+  };
+  const popupFn = (p) => {
+    return (
+      `<div style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;min-width:210px">` +
+      `<div style="font-weight:600;font-size:13.5px;margin-bottom:6px;color:#1B2A22">${p.ip}</div>` +
+      `<div style="color:#5C5A4E;margin-bottom:4px">${p.provinsi}</div>` +
+      `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Luas tanam</span><span>${fmt1(p.planting_area_ha)} ha</span></div>` +
+      `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Potensi karbon</span><span>${fmt1(p.ton_co2e)} ${CO2E}</span></div>` +
+      `<div style="display:flex;justify-content:space-between"><span style="color:#8A8677">Status RO</span><span style="font-weight:600;color:${p.status_ro === "Dalam RO" ? "#2C4A3A" : "#A23B3B"}">${p.status_ro}</span></div>` +
+      `</div>`
+    );
+  };
+
+  const filtered = features ? (statusFilter === "Semua" ? features : features.filter((f) => f.properties.status_ro === statusFilter)) : null;
+  const totals = filtered
+    ? {
+        count: filtered.length,
+        ip: new Set(filtered.map((f) => f.properties.ip)).size,
+        luas: filtered.reduce((a, f) => a + (f.properties.planting_area_ha || 0), 0),
+        karbon: filtered.reduce((a, f) => a + (f.properties.ton_co2e || 0), 0),
+        dalamRo: filtered.filter((f) => f.properties.status_ro === "Dalam RO").length,
+        luarRo: filtered.filter((f) => f.properties.status_ro === "Luar RO").length,
+      }
+    : null;
+
+  return (
+    <div>
+      <Note tone="warn">
+        Sebaran ini adalah data <strong>dummy</strong> yang mencakup seluruh 52 unit pelaksana FOLU NC-1 di 27 provinsi (bukan
+        hanya 13 IP Bidang II pada Tabel 6.9), dibuat untuk mengilustrasikan cakupan penuh proyek serta status keberadaannya di
+        dalam/luar Rencana Operasional (RO).
+      </Note>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
+        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Filter status RO</span>
+        <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", "Dalam RO", "Luar RO"]} renderLabel={(o) => o} />
+      </div>
+
+      {totals && (
+        <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4", marginBottom: 12 }}>
+          {[
+            { label: "Jumlah petak", value: fmt(totals.count), unit: `${totals.ip} unit pelaksana` },
+            { label: "Total luas tanam", value: fmt1(totals.luas), unit: "ha" },
+            { label: "Total potensi karbon", value: fmt1(totals.karbon), unit: CO2E, accent: true },
+            { label: "Dalam RO / Luar RO", value: `${fmt(totals.dalamRo)} / ${fmt(totals.luarRo)}`, unit: "petak" },
+          ].map((it, i) => (
+            <div key={it.label} style={{ flex: "1 1 170px", padding: "14px 16px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 17, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                {it.value}
+                <span style={{ fontSize: 11, fontWeight: 400, color: "#5C5A4E", marginLeft: 4 }}>{it.unit}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ border: "1px solid #D6D2C4" }}>
+        <GenericGeoMap geojsonUrl={`${import.meta.env.BASE_URL}folu_nc1_planting_ip.geojson`} styleFn={styleFn} popupFn={popupFn} onLoaded={setFeatures} height={480} />
+      </div>
+      <div style={{ display: "flex", gap: 16, padding: "10px 4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
+          <span style={{ width: 9, height: 9, background: "#2C4A3A", opacity: 0.6, border: "1px solid #2C4A3A", display: "inline-block" }} /> Dalam RO
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
+          <span style={{ width: 9, height: 9, background: "#A23B3B", opacity: 0.6, border: "1px solid #A23B3B", display: "inline-block" }} /> Luar RO
+        </div>
+      </div>
+
+      {features && (
+        <div style={{ marginTop: 8 }}>
+          <OverlapUploadPanel referenceFeatures={features} onResult={() => {}} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MonevBar({ label, pct, ambang }) {
   const color = pct >= ambang ? "#2C4A3A" : "#B9791F";
   return (
@@ -1377,6 +1726,7 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   const mapHeight = isNarrow ? 320 : 480;
   const [colorMode, setColorMode] = useState("jenis");
   const [uploadedFeatures, setUploadedFeatures] = useState(null);
+  const [petaMode, setPetaMode] = useState("lokasi");
 
   const nc1Rows = isNc1 ? (ipFilter && ipFilter !== "Semua" ? NC1_IP_TABLE.filter((r) => r.ip === ipFilter) : NC1_IP_TABLE) : [];
 
@@ -1386,10 +1736,43 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
     return NC1_AOI_FEATURES.filter((f) => keys.has(`${f.properties.ip}__${f.properties.tipeLahan}`));
   }, [isNc1, ipFilter]);
 
+  const modeSelector = (
+    <div style={{ marginBottom: 16 }}>
+      <ToggleGroup
+        value={petaMode}
+        onChange={setPetaMode}
+        options={[
+          { value: "lokasi", label: "Lokasi AOI" },
+          { value: "sebaran", label: "Sebaran Penanaman (Semua IP)" },
+          { value: "provinsi", label: "Choropleth Provinsi" },
+        ]}
+      />
+    </div>
+  );
+
+  if (petaMode === "sebaran") {
+    return (
+      <div>
+        {modeSelector}
+        <PlantingSebaranView />
+      </div>
+    );
+  }
+
+  if (petaMode === "provinsi") {
+    return (
+      <div>
+        {modeSelector}
+        <ProvinceChoroplethView />
+      </div>
+    );
+  }
+
   if (isNc1) {
     const hasIpFilter = ipFilter && ipFilter !== "Semua";
     return (
       <div>
+        {modeSelector}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>Warnai AOI berdasarkan</div>
           <ToggleGroup
@@ -1491,7 +1874,9 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
+    <div>
+      {modeSelector}
+      <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
       <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 62%", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", background: "#EAEBDF", position: "relative" }}>
         <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
           Peta interaktif &middot; scroll/tombol untuk zoom, seret untuk geser &middot; klik penanda untuk detail lokasi
@@ -1547,6 +1932,7 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
             <MechanismPanel site={selected} />
           </div>
         )}
+      </div>
       </div>
     </div>
   );
