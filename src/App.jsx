@@ -2079,22 +2079,60 @@ function tipeLahanToCategory(tipeLahan) {
 // (jumlah tanaman, diameter, tinggi) are real inputs; the calculation is the
 // same real formula; only the entries themselves are illustrative/dummy.
 // ---------------------------------------------------------------------------
-function computeCarbonFromMeasurement({ jumlahTanaman, diameter, tinggi }) {
-  const d2h = Math.pow(diameter, 2) * tinggi;
+// Young-tree formula (Adinugroho et al., 2023) \u2014 used for all jenis lahan by
+// default, and as the honest fallback for Gambut/Bambu even in "dewasa" mode
+// (no verified published coefficients for those two available here).
+function computeMuda({ diameter, tinggi }) {
+  const d2h = diameter * diameter * tinggi;
   const agbPerTree = 0.13868 * Math.pow(d2h, 0.67265);
   const bgbPerTree = agbPerTree * 0.215;
+  return { agbPerTree, bgbPerTree, formulaLabel: "Adinugroho et al. (2023), tanaman kecil/muda (D<5 cm)" };
+}
+
+// Mature-stand, ecosystem-specific formulas. Require wood density (rho, g/cm3).
+function computeDewasa({ jenis, diameter, tinggi, density }) {
+  const D = diameter;
+  const H = tinggi;
+  const rho = density || 0.5;
+  if (jenis === "Terestrial") {
+    const agbPerTree = 0.0673 * Math.pow(rho * D * D * H, 0.976);
+    const bgbPerTree = agbPerTree * 0.235;
+    return { agbPerTree, bgbPerTree, formulaLabel: "Chave et al. (2014), model pantropis" };
+  }
+  if (jenis === "Mangrove") {
+    const agbPerTree = 0.251 * rho * Math.pow(D, 2.46);
+    const bgbPerTree = 0.199 * Math.pow(rho, 0.899) * Math.pow(D, 2.22);
+    return { agbPerTree, bgbPerTree, formulaLabel: "Komiyama et al. (2005), model mangrove umum" };
+  }
+  if (jenis === "Agroforestri/MPTS") {
+    const agbPerTree = 0.11 * rho * Math.pow(D, 2.62);
+    const bgbPerTree = agbPerTree * 0.235;
+    return { agbPerTree, bgbPerTree, formulaLabel: "Ketterings et al. (2001), umum untuk agroforestri" };
+  }
+  // Gambut, Bambu: no verified published coefficients available here \u2014
+  // fall back to the young-tree formula rather than fabricate one.
+  const fallback = computeMuda({ diameter, tinggi });
+  return {
+    ...fallback,
+    formulaNote: `Rumus khusus tegakan dewasa untuk ${jenis} belum tersedia/terverifikasi di sini; memakai rumus tanaman muda (Adinugroho) sebagai pendekatan konservatif.`,
+  };
+}
+
+function computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman, diameter, tinggi, density }) {
+  const { agbPerTree, bgbPerTree, formulaLabel, formulaNote } =
+    fase === "dewasa" ? computeDewasa({ jenis, diameter, tinggi, density }) : computeMuda({ diameter, tinggi });
   const totalBiomassaPerTree = agbPerTree + bgbPerTree;
   const carbonPerTree = totalBiomassaPerTree * 0.47;
   const co2ePerTreeKg = carbonPerTree * (44 / 12);
   const totalCo2eTon = (co2ePerTreeKg * jumlahTanaman) / 1000;
-  return { agbPerTree, bgbPerTree, totalBiomassaPerTree, carbonPerTree, co2ePerTreeKg, totalCo2eTon };
+  return { agbPerTree, bgbPerTree, totalBiomassaPerTree, carbonPerTree, co2ePerTreeKg, totalCo2eTon, formulaLabel, formulaNote };
 }
 
 const ALL_MEASUREMENT_IPS = Array.from(new Set(ALL_IP_ROWS.map((r) => r.ip))).sort();
 
 function seedMeasurementEntry(id, ip, jenis, jumlah, diameter, tinggi, tanggal) {
-  const calc = computeCarbonFromMeasurement({ jumlahTanaman: jumlah, diameter, tinggi });
-  return { id, ip, jenis, jumlah, diameter, tinggi, tanggal, ...calc };
+  const calc = computeCarbonFromMeasurement({ jenis, fase: "muda", jumlahTanaman: jumlah, diameter, tinggi });
+  return { id, ip, jenis, fase: "muda", jumlah, diameter, tinggi, tanggal, ...calc };
 }
 
 const SEED_MEASUREMENT_ENTRIES = [
@@ -2889,18 +2927,20 @@ function ToggleGroup({ value, onChange, options }) {
 function MeasurementView() {
   const [ip, setIp] = useState(ALL_MEASUREMENT_IPS[0]);
   const [jenis, setJenis] = useState(KARBON_CATEGORIES[0].key);
+  const [fase, setFase] = useState("muda");
+  const [density, setDensity] = useState(0.5);
   const [jumlah, setJumlah] = useState(100);
   const [diameter, setDiameter] = useState(3);
   const [tinggi, setTinggi] = useState(2);
   const [entries, setEntries] = useState(SEED_MEASUREMENT_ENTRIES);
   const [viewMode, setViewMode] = useState("total");
 
-  const preview = computeCarbonFromMeasurement({ jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0 });
+  const preview = computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
 
   const handleAdd = () => {
-    const calc = computeCarbonFromMeasurement({ jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0 });
+    const calc = computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
     setEntries((prev) => [
-      { id: Date.now(), ip, jenis, jumlah: Number(jumlah), diameter: Number(diameter), tinggi: Number(tinggi), tanggal: "Input baru", ...calc },
+      { id: Date.now(), ip, jenis, fase, jumlah: Number(jumlah), diameter: Number(diameter), tinggi: Number(tinggi), tanggal: "Input baru", ...calc },
       ...prev,
     ]);
   };
@@ -2924,7 +2964,17 @@ function MeasurementView() {
       </Note>
 
       <div style={{ border: "1px solid #D6D2C4", padding: "20px 22px", marginTop: 16 }}>
-        <SectionTitle>Input pengukuran petak/kelompok</SectionTitle>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          <SectionTitle>Input pengukuran petak/kelompok</SectionTitle>
+          <ToggleGroup
+            value={fase}
+            onChange={setFase}
+            options={[
+              { value: "muda", label: "Tanaman muda (D<5cm)" },
+              { value: "dewasa", label: "Tegakan dewasa" },
+            ]}
+          />
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 16 }}>
           <div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Implementing Partner</div>
@@ -2946,7 +2996,19 @@ function MeasurementView() {
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Tinggi rata-rata (m)</div>
             <input type="number" min="0" step="0.1" value={tinggi} onChange={(e) => setTinggi(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
           </div>
+          {fase === "dewasa" && (
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Kerapatan kayu &rho; (g/cm&sup3;)</div>
+              <input type="number" min="0.1" step="0.05" value={density} onChange={(e) => setDensity(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
+            </div>
+          )}
         </div>
+
+        {preview.formulaNote && (
+          <div style={{ marginBottom: 14, padding: "10px 14px", background: "#F5ECD8", border: "1px solid #E0CFA0", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#7A5C1E", lineHeight: 1.5 }}>
+            {preview.formulaNote}
+          </div>
+        )}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", marginBottom: 16 }}>
           {[
@@ -2970,8 +3032,8 @@ function MeasurementView() {
         </button>
 
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 10, lineHeight: 1.6 }}>
-          AGB = 0,13868 &times; (D&sup2;H)^0,67265 &middot; BGB = AGB &times; 0,215 &middot; Karbon = (AGB+BGB) &times; 0,47 &middot;
-          CO&#8322;e = Karbon &times; 44/12 (Adinugroho et al., 2023)
+          Rumus dipakai: <strong>{preview.formulaLabel}</strong>. Karbon = (AGB+BGB) &times; 0,47 &middot; CO&#8322;e = Karbon &times; 44/12
+          (sama untuk semua rumus).
         </div>
       </div>
 
@@ -3026,8 +3088,8 @@ function MeasurementView() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, minWidth: 640 }}>
           <thead>
             <tr>
-              {["Tanggal", "IP", "Jenis lahan", "Jumlah tanaman", "Diameter (cm)", "Tinggi (m)", `Potensi karbon (${CO2E})`].map((h) => (
-                <th key={h} style={{ textAlign: h === "Tanggal" || h === "IP" || h === "Jenis lahan" ? "left" : "right", padding: "9px 14px", color: "#5C5A4E", fontWeight: 500, fontSize: 11.5, borderBottom: "1px solid #D6D2C4" }}>
+              {["Tanggal", "IP", "Jenis lahan", "Fase", "Jumlah tanaman", "Diameter (cm)", "Tinggi (m)", `Potensi karbon (${CO2E})`].map((h) => (
+                <th key={h} style={{ textAlign: h === "Tanggal" || h === "IP" || h === "Jenis lahan" || h === "Fase" ? "left" : "right", padding: "9px 14px", color: "#5C5A4E", fontWeight: 500, fontSize: 11.5, borderBottom: "1px solid #D6D2C4" }}>
                   {h}
                 </th>
               ))}
@@ -3044,6 +3106,7 @@ function MeasurementView() {
                     {e.jenis}
                   </span>
                 </td>
+                <td style={{ padding: "9px 14px", color: "#5C5A4E" }}>{e.fase === "dewasa" ? "Dewasa" : "Muda"}</td>
                 <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt(e.jumlah)}</td>
                 <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(e.diameter)}</td>
                 <td style={{ padding: "9px 14px", color: "#5C5A4E", textAlign: "right" }}>{fmt1(e.tinggi)}</td>
