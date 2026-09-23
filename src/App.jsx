@@ -1240,16 +1240,18 @@ function DownloadMenu({ features, filename }) {
 // switches the choropleth metric), without re-fetching. Shares the same
 // tile/invalidateSize robustness as LeafletMap.
 // ---------------------------------------------------------------------------
-function GenericGeoMap({ geojsonUrl, styleFn, popupFn, height, onLoaded }) {
+function GenericGeoMap({ geojsonUrl, styleFn, popupFn, filterFn, height, onLoaded }) {
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const dataLayerRef = useRef(null);
   const rawDataRef = useRef(null);
   const styleFnRef = useRef(styleFn);
   const popupFnRef = useRef(popupFn);
+  const filterFnRef = useRef(filterFn);
   const onLoadedRef = useRef(onLoaded);
   styleFnRef.current = styleFn;
   popupFnRef.current = popupFn;
+  filterFnRef.current = filterFn;
   onLoadedRef.current = onLoaded;
 
   useEffect(() => {
@@ -1311,12 +1313,16 @@ function GenericGeoMap({ geojsonUrl, styleFn, popupFn, height, onLoaded }) {
       dataLayerRef.current.remove();
       dataLayerRef.current = null;
     }
-    const layer = L.geoJSON(rawDataRef.current, {
-      style: styleFnRef.current,
-      onEachFeature: (feature, fLayer) => {
-        if (popupFnRef.current) fLayer.bindPopup(popupFnRef.current(feature.properties));
-      },
-    }).addTo(map);
+    const features = filterFnRef.current ? rawDataRef.current.features.filter((f) => filterFnRef.current(f.properties)) : rawDataRef.current.features;
+    const layer = L.geoJSON(
+      { type: "FeatureCollection", features },
+      {
+        style: styleFnRef.current,
+        onEachFeature: (feature, fLayer) => {
+          if (popupFnRef.current) fLayer.bindPopup(popupFnRef.current(feature.properties));
+        },
+      }
+    ).addTo(map);
     dataLayerRef.current = layer;
     if (fit) {
       try {
@@ -1348,6 +1354,10 @@ function GenericGeoMap({ geojsonUrl, styleFn, popupFn, height, onLoaded }) {
   useEffect(() => {
     renderLayer(false);
   }, [styleFn, popupFn]);
+
+  useEffect(() => {
+    renderLayer(!!filterFn);
+  }, [filterFn]);
 
   return <div ref={mapElRef} style={{ width: "100%", height: height || 480, background: "#EAEBDF" }} />;
 }
@@ -1497,9 +1507,10 @@ function ProvinceChoroplethView() {
   );
 }
 
-function PlantingSebaranView() {
+function PlantingSebaranView({ ipFilter }) {
   const [features, setFeatures] = useState(null);
   const [statusFilter, setStatusFilter] = useState("Semua");
+  const hasIpFilter = ipFilter && ipFilter !== "Semua";
 
   const styleFn = (feature) => {
     const status = feature.properties.status_ro;
@@ -1517,8 +1528,10 @@ function PlantingSebaranView() {
       `</div>`
     );
   };
+  const filterFn = hasIpFilter ? (p) => p.ip === ipFilter : null;
 
-  const filtered = features ? (statusFilter === "Semua" ? features : features.filter((f) => f.properties.status_ro === statusFilter)) : null;
+  const scoped = features ? (hasIpFilter ? features.filter((f) => f.properties.ip === ipFilter) : features) : null;
+  const filtered = scoped ? (statusFilter === "Semua" ? scoped : scoped.filter((f) => f.properties.status_ro === statusFilter)) : null;
   const totals = filtered
     ? {
         count: filtered.length,
@@ -1536,6 +1549,11 @@ function PlantingSebaranView() {
         Sebaran ini adalah data <strong>dummy</strong> yang mencakup seluruh 52 unit pelaksana FOLU NC-1 di 27 provinsi (bukan
         hanya 13 IP Bidang II pada Tabel 6.9), dibuat untuk mengilustrasikan cakupan penuh proyek serta status keberadaannya di
         dalam/luar Rencana Operasional (RO).
+        {hasIpFilter && (
+          <>
+            {" "}Ditampilkan hanya untuk <strong>{ipFilter}</strong>.
+          </>
+        )}
       </Note>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
@@ -1563,7 +1581,7 @@ function PlantingSebaranView() {
       )}
 
       <div style={{ border: "1px solid #D6D2C4" }}>
-        <GenericGeoMap geojsonUrl={`${import.meta.env.BASE_URL}folu_nc1_planting_ip.geojson`} styleFn={styleFn} popupFn={popupFn} onLoaded={setFeatures} height={480} />
+        <GenericGeoMap geojsonUrl={`${import.meta.env.BASE_URL}folu_nc1_planting_ip.geojson`} styleFn={styleFn} popupFn={popupFn} filterFn={filterFn} onLoaded={setFeatures} height={480} />
       </div>
       <div style={{ display: "flex", gap: 16, padding: "10px 4px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>
@@ -1720,13 +1738,12 @@ function OverlapUploadPanel({ referenceFeatures, onResult }) {
   );
 }
 
-function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
+function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter, petaMode }) {
   const isNc1 = pmuFilter === "NC-1";
   const isNarrow = useIsNarrow();
   const mapHeight = isNarrow ? 320 : 480;
   const [colorMode, setColorMode] = useState("jenis");
   const [uploadedFeatures, setUploadedFeatures] = useState(null);
-  const [petaMode, setPetaMode] = useState("lokasi");
 
   const nc1Rows = isNc1 ? (ipFilter && ipFilter !== "Semua" ? NC1_IP_TABLE.filter((r) => r.ip === ipFilter) : NC1_IP_TABLE) : [];
 
@@ -1736,43 +1753,18 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
     return NC1_AOI_FEATURES.filter((f) => keys.has(`${f.properties.ip}__${f.properties.tipeLahan}`));
   }, [isNc1, ipFilter]);
 
-  const modeSelector = (
-    <div style={{ marginBottom: 16 }}>
-      <ToggleGroup
-        value={petaMode}
-        onChange={setPetaMode}
-        options={[
-          { value: "lokasi", label: "Lokasi AOI" },
-          { value: "sebaran", label: "Sebaran Penanaman (Semua IP)" },
-          { value: "provinsi", label: "Choropleth Provinsi" },
-        ]}
-      />
-    </div>
-  );
-
   if (petaMode === "sebaran") {
-    return (
-      <div>
-        {modeSelector}
-        <PlantingSebaranView />
-      </div>
-    );
+    return <PlantingSebaranView ipFilter={ipFilter} />;
   }
 
   if (petaMode === "provinsi") {
-    return (
-      <div>
-        {modeSelector}
-        <ProvinceChoroplethView />
-      </div>
-    );
+    return <ProvinceChoroplethView />;
   }
 
   if (isNc1) {
     const hasIpFilter = ipFilter && ipFilter !== "Semua";
     return (
       <div>
-        {modeSelector}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E" }}>Warnai AOI berdasarkan</div>
           <ToggleGroup
@@ -1875,7 +1867,6 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter }) {
 
   return (
     <div>
-      {modeSelector}
       <div style={{ display: "flex", flexDirection: isNarrow ? "column" : "row", gap: 0, alignItems: "stretch" }}>
       <div style={{ flex: isNarrow ? "1 1 auto" : "1 1 62%", border: "1px solid #D6D2C4", borderRight: isNarrow ? "1px solid #D6D2C4" : "none", background: "#EAEBDF", position: "relative" }}>
         <div style={{ position: "absolute", top: 14, left: 18, zIndex: 500, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#1B2A22", background: "rgba(245,243,234,0.9)", padding: "3px 8px" }}>
@@ -2089,6 +2080,50 @@ function computeMuda({ diameter, tinggi }) {
   return { agbPerTree, bgbPerTree, formulaLabel: "Adinugroho et al. (2023), tanaman kecil/muda (D<5 cm)" };
 }
 
+// Mulyana (2021), untuk small trees tanaman terestrial: y = 5,835 * D^1,804
+function computeMudaMulyana({ diameter }) {
+  const agbPerTree = 5.835 * Math.pow(diameter, 1.804);
+  const bgbPerTree = agbPerTree * 0.215;
+  return {
+    agbPerTree,
+    bgbPerTree,
+    formulaLabel: "Mulyana (2021), small trees terestrial",
+    formulaNote:
+      "Unit input/output persamaan ini tidak disebutkan secara eksplisit pada sumber yang tersedia (diasumsikan D dalam cm, y dalam kg) \u2014 mohon verifikasi terhadap publikasi aslinya sebelum dipakai untuk pelaporan resmi.",
+  };
+}
+
+// Utami et al. (2025), model alometrik semai mangrove multi-spesies
+// (Bruguiera gymnorrhiza, R. mucronata, A. marina, S. caseolaris):
+// y = -9,272 + 11,898D + 17,825D^2. Persamaan polinomial ini hanya valid
+// pada rentang diameter semai yang diteliti; nilai negatif pada D sangat
+// kecil di-clamp ke 0 sebagai pendekatan konservatif.
+function computeMudaMangroveSemai({ diameter }) {
+  const raw = -9.272 + 11.898 * diameter + 17.825 * Math.pow(diameter, 2);
+  const agbPerTree = Math.max(0, raw);
+  const bgbPerTree = agbPerTree * 0.215;
+  return {
+    agbPerTree,
+    bgbPerTree,
+    formulaLabel: "Utami et al. (2025), semai mangrove (Bruguiera, Rhizophora, Avicennia, Sonneratia)",
+    formulaNote:
+      raw < 0
+        ? "Hasil mentah persamaan negatif pada diameter sekecil ini (di luar rentang valid model polinomial) \u2014 nilai di-clamp ke 0. Unit input/output juga tidak disebutkan eksplisit pada sumber (diasumsikan D dalam cm, y dalam gram) \u2014 mohon verifikasi terhadap publikasi aslinya."
+        : "Unit input/output persamaan ini tidak disebutkan secara eksplisit pada sumber yang tersedia (diasumsikan D dalam cm, y dalam gram) \u2014 mohon verifikasi terhadap publikasi aslinya sebelum dipakai untuk pelaporan resmi.",
+  };
+}
+
+const MUDA_FORMULA_OPTIONS = {
+  Terestrial: [
+    { key: "adinugroho", label: "Adinugroho et al. (2023) \u2014 umum", fn: computeMuda },
+    { key: "mulyana", label: "Mulyana (2021) \u2014 small trees terestrial", fn: computeMudaMulyana },
+  ],
+  Mangrove: [
+    { key: "adinugroho", label: "Adinugroho et al. (2023) \u2014 umum", fn: computeMuda },
+    { key: "utami", label: "Utami et al. (2025) \u2014 semai mangrove", fn: computeMudaMangroveSemai },
+  ],
+};
+
 // Mature-stand, ecosystem-specific formulas. Require wood density (rho, g/cm3).
 function computeDewasa({ jenis, diameter, tinggi, density }) {
   const D = diameter;
@@ -2118,9 +2153,16 @@ function computeDewasa({ jenis, diameter, tinggi, density }) {
   };
 }
 
-function computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman, diameter, tinggi, density }) {
-  const { agbPerTree, bgbPerTree, formulaLabel, formulaNote } =
-    fase === "dewasa" ? computeDewasa({ jenis, diameter, tinggi, density }) : computeMuda({ diameter, tinggi });
+function computeCarbonFromMeasurement({ jenis, fase, mudaSumber, jumlahTanaman, diameter, tinggi, density }) {
+  let calc;
+  if (fase === "dewasa") {
+    calc = computeDewasa({ jenis, diameter, tinggi, density });
+  } else {
+    const options = MUDA_FORMULA_OPTIONS[jenis];
+    const chosen = options && options.find((o) => o.key === mudaSumber);
+    calc = chosen ? chosen.fn({ diameter, tinggi }) : computeMuda({ diameter, tinggi });
+  }
+  const { agbPerTree, bgbPerTree, formulaLabel, formulaNote } = calc;
   const totalBiomassaPerTree = agbPerTree + bgbPerTree;
   const carbonPerTree = totalBiomassaPerTree * 0.47;
   const co2ePerTreeKg = carbonPerTree * (44 / 12);
@@ -2928,6 +2970,7 @@ function MeasurementView() {
   const [ip, setIp] = useState(ALL_MEASUREMENT_IPS[0]);
   const [jenis, setJenis] = useState(KARBON_CATEGORIES[0].key);
   const [fase, setFase] = useState("muda");
+  const [mudaSumber, setMudaSumber] = useState("adinugroho");
   const [density, setDensity] = useState(0.5);
   const [jumlah, setJumlah] = useState(100);
   const [diameter, setDiameter] = useState(3);
@@ -2935,10 +2978,17 @@ function MeasurementView() {
   const [entries, setEntries] = useState(SEED_MEASUREMENT_ENTRIES);
   const [viewMode, setViewMode] = useState("total");
 
-  const preview = computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
+  const mudaOptions = MUDA_FORMULA_OPTIONS[jenis];
+
+  const handleJenisChange = (val) => {
+    setJenis(val);
+    setMudaSumber("adinugroho");
+  };
+
+  const preview = computeCarbonFromMeasurement({ jenis, fase, mudaSumber, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
 
   const handleAdd = () => {
-    const calc = computeCarbonFromMeasurement({ jenis, fase, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
+    const calc = computeCarbonFromMeasurement({ jenis, fase, mudaSumber, jumlahTanaman: Number(jumlah) || 0, diameter: Number(diameter) || 0, tinggi: Number(tinggi) || 0, density: Number(density) || 0.5 });
     setEntries((prev) => [
       { id: Date.now(), ip, jenis, fase, jumlah: Number(jumlah), diameter: Number(diameter), tinggi: Number(tinggi), tanggal: "Input baru", ...calc },
       ...prev,
@@ -2982,8 +3032,14 @@ function MeasurementView() {
           </div>
           <div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Jenis lahan</div>
-            <Select label="Jenis" value={jenis} onChange={setJenis} options={KARBON_CATEGORIES.map((c) => c.key)} renderLabel={(o) => o} />
+            <Select label="Jenis" value={jenis} onChange={handleJenisChange} options={KARBON_CATEGORIES.map((c) => c.key)} renderLabel={(o) => o} />
           </div>
+          {fase === "muda" && mudaOptions && mudaOptions.length > 1 && (
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Sumber rumus</div>
+              <Select label="Sumber" value={mudaSumber} onChange={setMudaSumber} options={mudaOptions.map((o) => o.key)} renderLabel={(k) => mudaOptions.find((o) => o.key === k).label} />
+            </div>
+          )}
           <div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Jumlah tanaman hidup</div>
             <input type="number" min="0" value={jumlah} onChange={(e) => setJumlah(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
@@ -3210,22 +3266,41 @@ export default function App() {
   const [ipFilter, setIpFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [selected, setSelected] = useState(null);
+  const [petaMode, setPetaMode] = useState("lokasi");
+  const [sebaranIpList, setSebaranIpList] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${import.meta.env.BASE_URL}folu_nc1_planting_ip.geojson`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setSebaranIpList(Array.from(new Set(data.features.map((f) => f.properties.ip))).sort());
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const ipOptions = useMemo(() => {
     if (tab === "karbon") {
       const scoped = pmuFilter === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.pmu === pmuFilter);
       return ["Semua", ...Array.from(new Set(scoped.map((r) => r.ip))).sort()];
     }
+    if (tab === "peta" && petaMode === "sebaran") {
+      return ["Semua", ...(sebaranIpList || [])];
+    }
     if (tab === "peta" && pmuFilter === "NC-1") {
       return ["Semua", ...Array.from(new Set(NC1_IP_TABLE.map((r) => r.ip)))];
     }
     const scoped = pmuFilter === "Semua" ? SITES : SITES.filter((s) => s.pmu === pmuFilter);
     return ["Semua", ...Array.from(new Set(scoped.map((s) => s.ip))).sort()];
-  }, [pmuFilter, tab]);
+  }, [pmuFilter, tab, petaMode, sebaranIpList]);
 
   useEffect(() => {
     setIpFilter("Semua");
-  }, [tab]);
+  }, [tab, petaMode]);
 
   const handlePmuChange = (val) => {
     setPmuFilter(val);
@@ -3282,32 +3357,58 @@ export default function App() {
         </div>
       </div>
 
-      {tab === "peta" && pmuFilter === "NC-1" && <Nc1PetaKpiStrip ipFilter={ipFilter} />}
-      {((tab === "peta" && pmuFilter !== "NC-1") || (tab === "karbon" && !isKarbonReportPanel)) && <KpiStrip sites={filteredSites} />}
+      {tab === "peta" && pmuFilter === "NC-1" && petaMode === "lokasi" && <Nc1PetaKpiStrip ipFilter={ipFilter} />}
+      {((tab === "peta" && petaMode === "lokasi" && pmuFilter !== "NC-1") || (tab === "karbon" && !isKarbonReportPanel)) && <KpiStrip sites={filteredSites} />}
 
       <div style={{ padding: "18px 26px 40px", maxWidth: 1180, margin: "0 auto" }}>
-        {(tab === "peta" || tab === "karbon") && (
+        {tab === "peta" && (
+          <div style={{ marginBottom: 16 }}>
+            <ToggleGroup
+              value={petaMode}
+              onChange={setPetaMode}
+              options={[
+                { value: "lokasi", label: "Lokasi AOI" },
+                { value: "sebaran", label: "Sebaran Penanaman (Semua IP)" },
+                { value: "provinsi", label: "Choropleth Provinsi" },
+              ]}
+            />
+          </div>
+        )}
+
+        {((tab === "peta" && petaMode !== "provinsi") || tab === "karbon") && (
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#5C5A4E", fontSize: 12.5 }}>
               <Filter size={13} /> Filter
             </div>
-            <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
+            {!(tab === "peta" && petaMode === "sebaran") && (
+              <Select label="PMU" value={pmuFilter} onChange={handlePmuChange} options={["Semua", ...Object.keys(PMU_META)]} renderLabel={(o) => (o === "Semua" ? "Semua PMU" : PMU_META[o].label)} />
+            )}
             <Select label="IP" value={ipFilter} onChange={setIpFilter} options={ipOptions} renderLabel={(o) => (o === "Semua" ? "Semua IP" : o)} />
-            {tab === "peta" && pmuFilter !== "NC-1" && (
+            {tab === "peta" && petaMode === "lokasi" && pmuFilter !== "NC-1" && (
               <Select label="Status" value={statusFilter} onChange={setStatusFilter} options={["Semua", ...Object.keys(STATUS_META)]} renderLabel={(o) => o} />
             )}
-            {tab === "peta" && pmuFilter === "NC-1" && (
+            {tab === "peta" && petaMode === "lokasi" && pmuFilter === "NC-1" && (
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", fontStyle: "italic" }}>
                 Menampilkan data riil Tabel 6.9 (IP asli, bukan status verifikasi dummy)
               </span>
             )}
+            {tab === "peta" && petaMode === "sebaran" && (
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", fontStyle: "italic" }}>
+                52 unit pelaksana di seluruh Indonesia (data dummy)
+              </span>
+            )}
+          </div>
+        )}
+        {tab === "peta" && petaMode === "provinsi" && (
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#8A8677", fontStyle: "italic", marginBottom: 16 }}>
+            Data gabungan tingkat provinsi &mdash; filter PMU/IP tidak berlaku untuk tampilan ini.
           </div>
         )}
 
         {tab === "beranda" && <BerandaView year={year} setTab={setTab} />}
         {tab === "pengukuran" && <MeasurementView />}
         {tab === "pelaporan" && <ReportingView />}
-        {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
+        {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} pmuFilter={pmuFilter} ipFilter={ipFilter} petaMode={petaMode} />}
         {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
