@@ -1934,34 +1934,55 @@ function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter, petaMo
 // NC-1 report data above, so the Karbon tab can show a consistent format
 // across all three PMUs while only NC-1 is backed by the real report.
 // ---------------------------------------------------------------------------
-const NC23_REPORT_META = { title: "Ringkasan Peningkatan Cadangan Karbon NC-2&3 (dummy)", asOf: "data contoh" };
-const NC23_PLANTING = { targetHa: 12500, realisasi2024Ha: 5200, realisasi2025Ha: 11800, pctOfTarget: 94.4 };
-const NC23_METHOD_COMPARISON = [
-  { tahun: 2024, alometrikLama: 15400, adjustmentBaru: 9800 },
-  { tahun: 2025, alometrikLama: 26700, adjustmentBaru: 16950 },
-];
+const NC23_REPORT_META = { title: "Petunjuk Teknis Monitoring Karbon dan Spasial \u2014 FOLU NC-2&3 (Revisi 1)", asOf: "data s.d. 31 Agustus 2026" };
 const NC23_INTERVENTIONS = [
-  { key: "terestrial", label: "Penanaman RHL Terestrial", icon: TreePine, color: "#2C4A3A", estimasi: 6200, uncertaintyPct: 45, lower: 3410, upper: 8990, status: "Estimasi awal (dummy); perlu data diameter, tinggi, dan survival rate aktual." },
-  { key: "mangrove", label: "Mangrove", icon: Waves, color: "#2E6B6B", estimasi: 850, uncertaintyPct: 50, lower: 425, upper: 1275, status: "Estimasi awal (dummy); perlu pemisahan seedling/sapling dan monitoring substrat." },
-  { key: "gambut", label: "Gambut", icon: Droplets, color: "#8A6A2E", estimasi: 9500, uncertaintyPct: 60, lower: 3800, upper: 15200, status: "Estimasi awal (dummy) berisiko tinggi; perlu validasi hidrologi dan drainase." },
-  { key: "agroforestri", label: "Agroforestri & IP Lain", icon: Sprout, color: "#B9791F", estimasi: 400, uncertaintyPct: 50, lower: 200, upper: 600, status: "Estimasi awal (dummy); perlu pemisahan jenis tanaman dan data kelompok." },
+  { key: "terestrial", label: "Penanaman RHL Terestrial", icon: TreePine, color: "#2C4A3A", estimasi: 356.5, uncertaintyPct: null, lower: 356.5, upper: 356.5, status: "Total resmi dokumen sumber. Catatan: penjumlahan baris IP terestrial = 706,74 (nilai 190,73 identik pada 3 baris \u2021) \u2014 perlu klarifikasi ke penyusun dokumen." },
+  { key: "mangrove", label: "Mangrove", icon: Waves, color: "#2E6B6B", estimasi: 1755.65, uncertaintyPct: null, lower: 1755.65, upper: 1755.65, status: "Seluruhnya dari Dishut Prov. Lampung (10 ha). Rentang uncertainty belum dilaporkan." },
 ];
-const NC23_TOTAL = { estimasi: 16950, uncertaintyPct: 52.4, lower: 7835, upper: 26065 };
-const NC23_SURVIVAL = [
-  { label: "IP Borneo Asri (P0)", value: 82 },
-  { label: "IP Katingan Mitra (P0)", value: 68 },
-  { label: "Rehabilitasi mangrove (rata-rata)", value: 58 },
-];
+const NC23_TOTAL = { estimasi: 2112.15, uncertaintyPct: null, lower: 2112.15, upper: 2112.15 };
+const NC23_SURVIVAL = [];
 const NC23_IP_TABLE = [
-  { no: 1, ip: "IP Borneo Asri", provinsi: "Kalimantan Barat", tipeLahan: "Terestrial", target: 4500, real2024: 2100, real2025: 4150, lama2024: 5200, lama2025: 9800, baru2024: 3100, baru2025: 6200 },
-  { no: 2, ip: "IP Katingan Mitra", provinsi: "Kalimantan Tengah", tipeLahan: "Gambut", target: 6000, real2024: 2600, real2025: 5900, lama2024: 9200, lama2025: 14600, baru2024: 5700, baru2025: 9500 },
-  { no: 3, ip: "IP Kaltim Asri", provinsi: "Kalimantan Timur", tipeLahan: "Mangrove", target: 800, real2024: 350, real2025: 780, lama2024: 900, lama2025: 1550, baru2024: 550, baru2025: 850 },
-  { no: 4, ip: "IP Sulteng Mandiri", provinsi: "Sulawesi Tengah", tipeLahan: "Terestrial", target: 1200, real2024: 150, real2025: 970, lama2024: 1800, lama2025: 750, baru2024: 450, baru2025: 400 },
+  { no: 1, ip: "P2SEMH", provinsi: "–", tipeLahan: "Terestrial", target: 10, real2024: null, real2025: 10, lama2024: null, lama2025: null, baru2024: null, baru2025: 1.86 },
+  { no: 2, ip: "Dishut Prov. Kalimantan Selatan", provinsi: "–", tipeLahan: "Terestrial", target: 280, real2024: null, real2025: 280, lama2024: null, lama2025: null, baru2024: null, baru2025: 49.13 },
+  { no: 3, ip: "DLHK Prov. Gorontalo", provinsi: "–", tipeLahan: "Terestrial", target: 350, real2024: null, real2025: 350, lama2024: null, lama2025: null, baru2024: null, baru2025: 40.71 },
+  { no: 4, ip: "PMU Rumpin", provinsi: "–", tipeLahan: "Terestrial", target: 5, real2024: null, real2025: 5, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 5, ip: "YBKK", provinsi: "–", tipeLahan: "Terestrial", target: 67, real2024: null, real2025: 40, lama2024: null, lama2025: null, baru2024: null, baru2025: 0.47 },
+  { no: 6, ip: "FAHUTAN IPB", provinsi: "–", tipeLahan: "Terestrial", target: 80, real2024: null, real2025: 46, lama2024: null, lama2025: null, baru2024: null, baru2025: 3.95 },
+  { no: 7, ip: "Fahutan UGM (IKN)", provinsi: "–", tipeLahan: "Terestrial", target: 300, real2024: null, real2025: 171, lama2024: null, lama2025: null, baru2024: null, baru2025: 33.13 },
+  { no: 8, ip: "Ditjen KSDAE", provinsi: "–", tipeLahan: "Terestrial", target: 2220, real2024: null, real2025: 1113, lama2024: null, lama2025: null, baru2024: null, baru2025: 190.73, note: " ‡" },
+  { no: 9, ip: "Fahutan UGM (Getas)", provinsi: "–", tipeLahan: "Terestrial", target: 300, real2024: null, real2025: 130, lama2024: null, lama2025: null, baru2024: null, baru2025: 190.73, note: " ‡" },
+  { no: 10, ip: "Dishut Prov. Sumatera Barat", provinsi: "–", tipeLahan: "Terestrial", target: 275, real2024: null, real2025: 113, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 11, ip: "PULIK Unpad", provinsi: "–", tipeLahan: "Terestrial", target: 60, real2024: null, real2025: 21, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 12, ip: "Dishut Prov. Lampung", provinsi: "–", tipeLahan: "Terestrial", target: 147, real2024: null, real2025: 31, lama2024: null, lama2025: null, baru2024: null, baru2025: 3.2 },
+  { no: 13, ip: "DKSHE IPB", provinsi: "–", tipeLahan: "Terestrial", target: 1500, real2024: null, real2025: 238, lama2024: null, lama2025: null, baru2024: null, baru2025: 190.73, note: " ‡" },
+  { no: 14, ip: "P2HB", provinsi: "–", tipeLahan: "Terestrial", target: 3500, real2024: null, real2025: 500, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 15, ip: "BP2SDM", provinsi: "–", tipeLahan: "Terestrial", target: 70, real2024: null, real2025: 3, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 16, ip: "Dishut Prov. Sumatera Selatan", provinsi: "–", tipeLahan: "Terestrial", target: 268, real2024: null, real2025: 9, lama2024: null, lama2025: null, baru2024: null, baru2025: 2.1 },
+  { no: 17, ip: "Ditjen PDAS RH", provinsi: "–", tipeLahan: "Terestrial", target: 5000, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 18, ip: "Ditjen PS", provinsi: "–", tipeLahan: "Terestrial", target: 1200, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 19, ip: "Saka Wanabakti", provinsi: "–", tipeLahan: "Terestrial", target: 5, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 20, ip: "Jikalahari", provinsi: "–", tipeLahan: "Terestrial", target: 40, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 21, ip: "GCB", provinsi: "–", tipeLahan: "Terestrial", target: 60, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 22, ip: "Dishut Prov. Sulawesi Tengah", provinsi: "–", tipeLahan: "Terestrial", target: 340, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 23, ip: "PPIUNAS", provinsi: "–", tipeLahan: "Terestrial", target: 15, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 24, ip: "TLKM", provinsi: "–", tipeLahan: "Terestrial", target: 150, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 25, ip: "Fak. Pertanian UIM", provinsi: "–", tipeLahan: "Terestrial", target: 98, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 26, ip: "DLHK Prov. Sulawesi Selatan", provinsi: "–", tipeLahan: "Terestrial", target: 80, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 27, ip: "Saka Kalpataru", provinsi: "–", tipeLahan: "Terestrial", target: 1, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 28, ip: "Dishut Prov. Lampung", provinsi: "–", tipeLahan: "Mangrove", target: 10, real2024: null, real2025: 10, lama2024: null, lama2025: null, baru2024: null, baru2025: 1755.65 },
+  { no: 29, ip: "Koprabuh Kab. Timika", provinsi: "–", tipeLahan: "Mangrove", target: 50, real2024: null, real2025: 1, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 30, ip: "Kawali", provinsi: "–", tipeLahan: "Mangrove", target: 60, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 31, ip: "Jikalahari", provinsi: "–", tipeLahan: "Mangrove", target: 50, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 32, ip: "Ditjen PDAS RH", provinsi: "–", tipeLahan: "Mangrove", target: 12, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 33, ip: "Direktorat PPED", provinsi: "–", tipeLahan: "Mangrove", target: 100, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 34, ip: "Saka Kalpataru", provinsi: "–", tipeLahan: "Mangrove", target: 2, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: null },
+  { no: 35, ip: "DLHK Prov. Aceh", provinsi: "–", tipeLahan: "Gambut", target: 330, real2024: null, real2025: 0, lama2024: null, lama2025: null, baru2024: null, baru2025: 0 },
 ];
-const NC23_IP_TOTAL = { target: 12500, real2024: 5200, real2025: 11800, lama2024: 17100, lama2025: 26700, baru2024: 9800, baru2025: 16950 };
+const NC23_IP_TOTAL = { target: 17034, real2024: null, real2025: 3066, lama2024: null, lama2025: null, baru2024: null, baru2025: 2112.15 };
 const NC23_METHOD_NOTE =
-  "Data ini bersifat dummy untuk keperluan demonstrasi antarmuka, disusun mengikuti format dan metodologi yang sama dengan " +
-  "adjustment alometrik NC-1 (Adinugroho et al., 2023). Belum merepresentasikan capaian aktual PMU NC-2&3.";
+  "Sumber: Integrasi Data Spasial dan Karbon (hal. 14), data s.d. 31 Agustus 2026, angka dibulatkan. PCK dihitung dengan alometrik " +
+  "memakai diameter pangkal dan tinggi semai. \u2021 Nilai 190,73 tCO\u2082e identik pada 3 baris IP (Ditjen KSDAE, Fahutan UGM Getas, DKSHE IPB) " +
+  "dan penjumlahan baris terestrial (706,74) berbeda dari total resmi (356,50) \u2014 perlu diklarifikasi. Perbandingan alometrik lama vs. adjustment tidak tersedia.";
 
 const NC4_REPORT_META = { title: "Ringkasan Peningkatan Cadangan Karbon NC-4 (dummy)", asOf: "data contoh" };
 const NC4_PLANTING = { targetHa: 9800, realisasi2024Ha: 3100, realisasi2025Ha: 8700, pctOfTarget: 88.8 };
@@ -2004,10 +2025,8 @@ const REPORT_DATA = {
     ipTotal: NC1_IP_TOTAL,
   },
   "NC-2&3": {
-    isDummy: true,
+    isDummy: false,
     meta: NC23_REPORT_META,
-    planting: NC23_PLANTING,
-    methodComparison: NC23_METHOD_COMPARISON,
     interventions: NC23_INTERVENTIONS,
     total: NC23_TOTAL,
     survival: NC23_SURVIVAL,
@@ -2080,47 +2099,42 @@ function computeMuda({ diameter, tinggi }) {
   return { agbPerTree, bgbPerTree, formulaLabel: "Adinugroho et al. (2023), tanaman kecil/muda (D<5 cm)" };
 }
 
-// Mulyana (2021), untuk small trees tanaman terestrial: y = 5,835 * D^1,804
-function computeMudaMulyana({ diameter }) {
-  const agbPerTree = 5.835 * Math.pow(diameter, 1.804);
-  const bgbPerTree = agbPerTree * 0.215;
+// Utami et al. (2025), Jurnal Hutan Tropika 20(1): semai Bruguiera gymnorrhiza.
+// y = -9,272 + 11,898*Dp + 17,825*Dp^2 -> biomassa total kering (gram),
+// Dp = diameter pangkal (cm), valid pada kisaran 0,2-1,6 cm.
+function computeMudaMangroveUtami({ diameter }) {
+  const rawGram = -9.272 + 11.898 * diameter + 17.825 * Math.pow(diameter, 2);
+  const totalBiomassaPerTree = Math.max(0, rawGram) / 1000; // kg
+  const outOfRange = diameter < 0.2 || diameter > 1.6;
   return {
-    agbPerTree,
-    bgbPerTree,
-    formulaLabel: "Mulyana (2021), small trees terestrial",
+    totalBiomassaPerTree,
+    isDirectBiomass: true,
+    formulaLabel: "Utami et al. (2025), semai Bruguiera gymnorrhiza (biomassa total, Dp)",
     formulaNote:
-      "Unit input/output persamaan ini tidak disebutkan secara eksplisit pada sumber yang tersedia (diasumsikan D dalam cm, y dalam kg) \u2014 mohon verifikasi terhadap publikasi aslinya sebelum dipakai untuk pelaporan resmi.",
+      "Persamaan ini menghasilkan biomassa TOTAL kering (gram) dari diameter PANGKAL (Dp); BGB tidak dipisah. " +
+      (outOfRange ? "Dp di luar kisaran valid model (0,2\u20131,6 cm) \u2014 hasil ekstrapolasi, gunakan dengan hati-hati. " : "") +
+      "Karbon = biomassa \u00d7 0,47.",
   };
 }
 
-// Utami et al. (2025), model alometrik semai mangrove multi-spesies
-// (Bruguiera gymnorrhiza, R. mucronata, A. marina, S. caseolaris):
-// y = -9,272 + 11,898D + 17,825D^2. Persamaan polinomial ini hanya valid
-// pada rentang diameter semai yang diteliti; nilai negatif pada D sangat
-// kecil di-clamp ke 0 sebagai pendekatan konservatif.
-function computeMudaMangroveSemai({ diameter }) {
-  const raw = -9.272 + 11.898 * diameter + 17.825 * Math.pow(diameter, 2);
-  const agbPerTree = Math.max(0, raw);
-  const bgbPerTree = agbPerTree * 0.215;
+// Mulyana et al. (2021), Jurnal Galam 2(1): semai R. mucronata, A. marina, S. caseolaris.
+// Karbon (gram) = 5,835 * Dp^1,804 \u2014 sudah merupakan karbon (biomassa \u00d7 0,47), bukan AGB.
+function computeMudaMangroveMulyana({ diameter }) {
+  const carbonPerTree = (5.835 * Math.pow(diameter, 1.804)) / 1000; // kg C
   return {
-    agbPerTree,
-    bgbPerTree,
-    formulaLabel: "Utami et al. (2025), semai mangrove (Bruguiera, Rhizophora, Avicennia, Sonneratia)",
+    carbonPerTree,
+    isDirectCarbon: true,
+    formulaLabel: "Mulyana et al. (2021), semai mangrove (karbon langsung, Dp)",
     formulaNote:
-      raw < 0
-        ? "Hasil mentah persamaan negatif pada diameter sekecil ini (di luar rentang valid model polinomial) \u2014 nilai di-clamp ke 0. Unit input/output juga tidak disebutkan eksplisit pada sumber (diasumsikan D dalam cm, y dalam gram) \u2014 mohon verifikasi terhadap publikasi aslinya."
-        : "Unit input/output persamaan ini tidak disebutkan secara eksplisit pada sumber yang tersedia (diasumsikan D dalam cm, y dalam gram) \u2014 mohon verifikasi terhadap publikasi aslinya sebelum dipakai untuk pelaporan resmi.",
+      "Persamaan ini langsung menghasilkan KARBON (gram) dari diameter PANGKAL (Dp); tidak dikali 0,47 lagi. AGB/BGB tidak ditampilkan.",
   };
 }
 
 const MUDA_FORMULA_OPTIONS = {
-  Terestrial: [
-    { key: "adinugroho", label: "Adinugroho et al. (2023) \u2014 umum", fn: computeMuda },
-    { key: "mulyana", label: "Mulyana (2021) \u2014 small trees terestrial", fn: computeMudaMulyana },
-  ],
   Mangrove: [
     { key: "adinugroho", label: "Adinugroho et al. (2023) \u2014 umum", fn: computeMuda },
-    { key: "utami", label: "Utami et al. (2025) \u2014 semai mangrove", fn: computeMudaMangroveSemai },
+    { key: "utami", label: "Utami et al. (2025) \u2014 semai B. gymnorrhiza", fn: computeMudaMangroveUtami },
+    { key: "mulyana_semai", label: "Mulyana et al. (2021) \u2014 semai mangrove", fn: computeMudaMangroveMulyana },
   ],
 };
 
@@ -2162,9 +2176,21 @@ function computeCarbonFromMeasurement({ jenis, fase, mudaSumber, jumlahTanaman, 
     const chosen = options && options.find((o) => o.key === mudaSumber);
     calc = chosen ? chosen.fn({ diameter, tinggi }) : computeMuda({ diameter, tinggi });
   }
-  const { agbPerTree, bgbPerTree, formulaLabel, formulaNote } = calc;
-  const totalBiomassaPerTree = agbPerTree + bgbPerTree;
-  const carbonPerTree = totalBiomassaPerTree * 0.47;
+  const { formulaLabel, formulaNote } = calc;
+  let agbPerTree = calc.agbPerTree ?? null;
+  let bgbPerTree = calc.bgbPerTree ?? null;
+  let totalBiomassaPerTree, carbonPerTree;
+  if (calc.isDirectCarbon) {
+    carbonPerTree = calc.carbonPerTree;
+    totalBiomassaPerTree = carbonPerTree / 0.47;
+  } else if (calc.isDirectBiomass) {
+    totalBiomassaPerTree = calc.totalBiomassaPerTree;
+    bgbPerTree = null;
+    carbonPerTree = totalBiomassaPerTree * 0.47;
+  } else {
+    totalBiomassaPerTree = agbPerTree + bgbPerTree;
+    carbonPerTree = totalBiomassaPerTree * 0.47;
+  }
   const co2ePerTreeKg = carbonPerTree * (44 / 12);
   const totalCo2eTon = (co2ePerTreeKg * jumlahTanaman) / 1000;
   return { agbPerTree, bgbPerTree, totalBiomassaPerTree, carbonPerTree, co2ePerTreeKg, totalCo2eTon, formulaLabel, formulaNote };
@@ -2201,7 +2227,7 @@ function UncertaintyRow({ item }) {
         </div>
         <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: "#2C4A3A", fontWeight: 600 }}>
           {fmt1(item.estimasi)} {CO2E}
-          <span style={{ color: "#8A8677", fontWeight: 400 }}> ({"\u00b1"}{item.uncertaintyPct}%)</span>
+          {item.uncertaintyPct != null && <span style={{ color: "#8A8677", fontWeight: 400 }}> ({"\u00b1"}{item.uncertaintyPct}%)</span>}
         </span>
       </div>
       <div style={{ position: "relative", height: 10, background: "#EDEAD9" }}>
@@ -2380,6 +2406,14 @@ function ReportCarbonPanel({ data, ipFilter }) {
         ))}
       </div>
 
+      {before.alometrikLama === 0 && after.alometrikLama === 0 ? (
+        <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "16px 22px" }}>
+          <Note tone="neutral">
+            Perbandingan alometrik lama vs. adjustment tidak tersedia untuk PMU ini: dokumen sumber hanya melaporkan PCK hasil
+            alometrik yang memakai diameter pangkal dan tinggi semai.
+          </Note>
+        </div>
+      ) : (
       <div style={{ border: "1px solid #D6D2C4", borderTop: "none", padding: "20px 22px 10px", marginTop: 0 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <SectionTitle>Alometrik lama vs. adjustment alometrik baru</SectionTitle>
@@ -2422,6 +2456,8 @@ function ReportCarbonPanel({ data, ipFilter }) {
           </ResponsiveContainer>
         )}
       </div>
+
+      )}
 
       <div style={{ marginTop: 18 }}>
         <CategoryAccumulationChart
@@ -3045,7 +3081,7 @@ function MeasurementView() {
             <input type="number" min="0" value={jumlah} onChange={(e) => setJumlah(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
           </div>
           <div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>Diameter rata-rata (cm)</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: "#5C5A4E", marginBottom: 4 }}>{fase === "muda" && (mudaSumber === "utami" || mudaSumber === "mulyana_semai") ? "Diameter PANGKAL rata-rata (cm)" : "Diameter rata-rata (cm)"}</div>
             <input type="number" min="0" step="0.1" value={diameter} onChange={(e) => setDiameter(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, border: "1px solid #D6D2C4" }} />
           </div>
           <div>
@@ -3068,8 +3104,8 @@ function MeasurementView() {
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 0, border: "1px solid #D6D2C4", marginBottom: 16 }}>
           {[
-            { label: "AGB / tanaman", value: `${fmt1(preview.agbPerTree)} kg` },
-            { label: "BGB / tanaman", value: `${fmt1(preview.bgbPerTree)} kg` },
+            { label: "AGB / tanaman", value: preview.agbPerTree == null ? "\u2013" : `${fmt1(preview.agbPerTree)} kg` },
+            { label: "Biomassa total / tanaman", value: `${fmt1(preview.totalBiomassaPerTree)} kg` },
             { label: "Karbon / tanaman", value: `${fmt1(preview.carbonPerTree)} kg` },
             { label: "Potensi karbon total", value: `${fmt1(preview.totalCo2eTon)} ${CO2E}`, accent: true },
           ].map((it, i) => (
@@ -3088,7 +3124,7 @@ function MeasurementView() {
         </button>
 
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "#8A8677", marginTop: 10, lineHeight: 1.6 }}>
-          Rumus dipakai: <strong>{preview.formulaLabel}</strong>. Karbon = (AGB+BGB) &times; 0,47 &middot; CO&#8322;e = Karbon &times; 44/12
+          Rumus dipakai: <strong>{preview.formulaLabel}</strong>. Karbon = biomassa &times; 0,47 (kecuali rumus karbon-langsung) &middot; CO&#8322;e = Karbon &times; 44/12
           (sama untuk semua rumus).
         </div>
       </div>
