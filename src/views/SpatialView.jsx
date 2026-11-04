@@ -4,7 +4,7 @@ import { Filter, Upload, MapPinned } from "lucide-react";
 import { DownloadMenu, GenericGeoMap, LeafletMap, MechanismPanel, checkOverlapAgainstReference } from "../components/maps";
 import { Field, Note, Select, StatusBadge, ToggleGroup, useIsNarrow } from "../components/ui";
 import { NC1_TIPE_COLOR, PMU_META, STATUS_META } from "../constants";
-import { NC1_IP_TABLE } from "../data/legacy";
+import { NC1_IP_TABLE } from "../data";
 import { CO2E, fmt, fmt1 } from "../lib/format";
 import { NC1_AOI_FEATURES, NC1_PETAK_BY_ROW } from "../lib/geo";
 
@@ -13,15 +13,27 @@ import { NC1_AOI_FEATURES, NC1_PETAK_BY_ROW } from "../lib/geo";
 // (indonesia_provinsi_folu_ro_emisi.geojson): emisi GRK, RO count, small
 // grants by PMU, KTH count, dan realisasi tanam/karbon NC-1 per provinsi.
 // ---------------------------------------------------------------------------
+// `desc` menjelaskan isi kolom; `caveat` dipakai bila definisi kolom belum
+// terdokumentasi atau berisiko disalahartikan (poin 8 tinjauan dashboard).
+const NC1_GEO_CAVEAT =
+  "Jumlah kolom ini di seluruh provinsi tidak sama dengan Laporan Tahunan NC-1 TA 2025 (realisasi 18.699 ha; PCK adjustment 22.277,68 tCO\u2082e, " +
+  "alometrik lama 36.814,2 tCO\u2082e). Versi data dan metode kolom GeoJSON perlu dikonfirmasi sebelum dipakai sebagai angka resmi.";
+const GHG_CAVEAT =
+  "Definisi metode kolom GHG_* belum terdokumentasi pada sumber GeoJSON. Hasil pengecekan atas 37 provinsi berdata: " +
+  "kolom \"Selisih\" = Emisi 2006\u20132020 \u2212 Emisi 2021\u20132024, sedangkan kolom \"FileFormula\" = Emisi 2006\u20132020 + Emisi 2021\u20132024. " +
+  "Keduanya berbeda arti; nilai Emisi 2021\u20132024 bisa negatif (serapan bersih). Jangan dibandingkan dengan nilai RBC nasional sebelum metodenya dikonfirmasi.";
 export const PROVINCE_METRICS = [
-  { key: "NC1_Planting_Area_Ha", label: "Luas Tanam NC-1", unit: "ha", color: "#2C4A3A" },
-  { key: "NC1_Ton_CO2e", label: "Potensi Karbon NC-1", unit: "tCO\u2082e", color: "#2E6B6B" },
-  { key: "JML_RO", label: "Jumlah RO", unit: "RO", color: "#5B4A7A" },
-  { key: "Jumlah_Small_Grant_NC2_3", label: "Small Grants NC-2&3", unit: "unit", color: "#B9791F" },
-  { key: "Jumlah_Small_Grant_NC4", label: "Small Grants NC-4", unit: "unit", color: "#8A6A2E" },
-  { key: "NC1_Jumlah_KTH_2025", label: "Jumlah KTH 2025", unit: "kelompok", color: "#6B4C9A" },
-  { key: "GHG_Pengurangan_Emisi_Selisih_tonCO2e_y", label: "Pengurangan Emisi (Selisih)", unit: "tCO\u2082e", color: "#2451A3" },
-  { key: "TOTAL_ANGGARAN_RP", label: "Total Anggaran", unit: "Rp", color: "#A23B3B" },
+  { key: "NC1_Planting_Area_Ha", label: "Luas Tanam NC-1", unit: "ha", color: "#2C4A3A", desc: "Luas tanam NC-1 per provinsi.", caveat: NC1_GEO_CAVEAT },
+  { key: "NC1_Ton_CO2e", label: "Potensi Karbon NC-1", unit: "tCO\u2082e", color: "#2E6B6B", desc: "Potensi PCK NC-1 per provinsi (Lapis B).", caveat: NC1_GEO_CAVEAT },
+  { key: "JML_RO", label: "Jumlah RO", unit: "RO", color: "#5B4A7A", desc: "Jumlah Rencana Operasional per provinsi." },
+  { key: "Jumlah_Small_Grant_NC2_3", label: "Small Grants NC-2&3", unit: "unit", color: "#B9791F", desc: "Jumlah penerima small grant NC-2&3." },
+  { key: "Jumlah_Small_Grant_NC4", label: "Small Grants NC-4", unit: "unit", color: "#8A6A2E", desc: "Jumlah penerima small grant NC-4." },
+  { key: "NC1_Jumlah_KTH_2025", label: "Jumlah KTH 2025", unit: "kelompok", color: "#6B4C9A", desc: "Jumlah KTH NC-1 tahun 2025." },
+  { key: "GHG_Emissions_2006_2020_tonCO2e_y", label: "Emisi FOLU 2006\u20132020", unit: "tCO\u2082e/th", color: "#7A3B3B", desc: "Emisi tahunan sektor FOLU periode 2006\u20132020.", caveat: GHG_CAVEAT },
+  { key: "GHG_Emissions_2021_2024_tonCO2e_y", label: "Emisi FOLU 2021\u20132024", unit: "tCO\u2082e/th", color: "#9A5B3B", desc: "Emisi tahunan sektor FOLU periode 2021\u20132024 (negatif = serapan bersih).", caveat: GHG_CAVEAT },
+  { key: "GHG_Pengurangan_Emisi_Selisih_tonCO2e_y", label: "Pengurangan Emisi (Selisih)", unit: "tCO\u2082e/th", color: "#2451A3", desc: "Emisi 2006\u20132020 dikurangi emisi 2021\u20132024.", caveat: GHG_CAVEAT },
+  { key: "GHG_Mitigation_FileFormula_tonCO2e_y", label: "Mitigasi (FileFormula)", unit: "tCO\u2082e/th", color: "#3B5BA3", desc: "Penjumlahan emisi 2006\u20132020 dan 2021\u20132024 (bukan selisih).", caveat: GHG_CAVEAT },
+  { key: "TOTAL_ANGGARAN_RP", label: "Total Anggaran", unit: "Rp", color: "#A23B3B", desc: "Total anggaran program per provinsi." },
 ];
 
 export function computeQuantileBreaks(values, classes = 5) {
@@ -107,6 +119,10 @@ export function ProvinceChoroplethView() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0" }}>
         <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E" }}>Tampilkan metrik</span>
         <Select label="Metrik" value={metricKey} onChange={setMetricKey} options={PROVINCE_METRICS.map((m) => m.key)} renderLabel={(k) => PROVINCE_METRICS.find((m) => m.key === k).label} />
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginTop: -6, marginBottom: 12, lineHeight: 1.55 }}>
+        {metric.desc}
+        {metric.caveat && <div style={{ marginTop: 6, color: "#8A2E2E" }}>{"\u26A0"} {metric.caveat}</div>}
       </div>
 
       {totals && (

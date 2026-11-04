@@ -1,0 +1,372 @@
+{
+  "pmu": "NC-1",
+  "source": {
+    "status": "riil",
+    "dokumen": "Laporan Tahunan FOLU NC-1 TA 2025 (Bab 6.1.2, Tabel 6.9 & 6.11)",
+    "asOf": "30 Juni 2026"
+  },
+  "meta": {
+    "title": "Laporan Tahunan FOLU NC-1 TA 2025",
+    "asOf": "30 Juni 2026"
+  },
+  "planting": {
+    "targetHa": 19006,
+    "realisasi2024Ha": 8170,
+    "realisasi2025Ha": 18699,
+    "pctOfTarget": 98.4
+  },
+  "methodComparison": [
+    {
+      "tahun": 2024,
+      "alometrikLama": 22159,
+      "adjustmentBaru": 14687.65
+    },
+    {
+      "tahun": 2025,
+      "alometrikLama": 36814.2,
+      "adjustmentBaru": 22277.68
+    }
+  ],
+  "interventions": [
+    {
+      "key": "terestrial",
+      "label": "Penanaman RHL Terestrial",
+      "icon": "TreePine",
+      "color": "#2C4A3A",
+      "estimasi": 806.87,
+      "uncertaintyPct": 50,
+      "lower": 403.44,
+      "upper": 1210.31,
+      "status": "Estimasi awal; perlu data diameter, tinggi, survival rate aktual, dan verifikasi spasial."
+    },
+    {
+      "key": "mangrove",
+      "label": "Mangrove",
+      "icon": "Waves",
+      "color": "#2E6B6B",
+      "estimasi": 587.45,
+      "uncertaintyPct": 50,
+      "lower": 293.73,
+      "upper": 881.18,
+      "status": "Estimasi awal; perlu pemisahan seedling/sapling, monitoring substrat, pasang surut, dan survival."
+    },
+    {
+      "key": "gambut",
+      "label": "Gambut",
+      "icon": "Droplets",
+      "color": "#8A6A2E",
+      "estimasi": 20712.75,
+      "uncertaintyPct": 60,
+      "lower": 8285.1,
+      "upper": 33140.4,
+      "status": "Estimasi awal berisiko tinggi; perlu validasi hidrologi, kebakaran, drainase, dan dekomposisi gambut."
+    },
+    {
+      "key": "bambu",
+      "label": "Bambu",
+      "icon": "Sprout",
+      "color": "#5B4A7A",
+      "estimasi": 14.8,
+      "uncertaintyPct": 35,
+      "lower": 9.62,
+      "upper": 19.98,
+      "status": "Estimasi awal; perlu data diameter culm, jumlah culm/rumpun, dan survival rumpun."
+    },
+    {
+      "key": "agroforestri",
+      "label": "MPTS / Agroforestri & IP Lain",
+      "icon": "Sprout",
+      "color": "#B9791F",
+      "estimasi": 155.8,
+      "uncertaintyPct": 50,
+      "lower": 77.9,
+      "upper": 233.7,
+      "status": "Estimasi awal; perlu pemisahan jenis tanaman, diameter, tinggi, survival, dan data kelompok."
+    }
+  ],
+  "total": {
+    "estimasi": 22277.68,
+    "uncertaintyPct": 55.8,
+    "lower": 9846,
+    "upper": 34709.36
+  },
+  "survival": [
+    {
+      "label": "Ditjen PDASRH (P0)",
+      "value": 89.62
+    },
+    {
+      "label": "Dishut Prov. Kalimantan Selatan (P0)",
+      "value": 75
+    },
+    {
+      "label": "Rehabilitasi mangrove (rata-rata)",
+      "value": 60
+    },
+    {
+      "label": "YBLL — bambu & MPTS",
+      "value": 60
+    }
+  ],
+  "methodNote": "Perhitungan menggunakan persamaan AGB = 0,13868 × (D²H)^0,67265 (Adinugroho et al., 2023), dikembangkan untuk tanaman kecil berdiameter <5 cm agar tidak overestimate biomassa tanaman muda. Biomassa bawah permukaan dihitung dengan root-to-shoot ratio ≈ 0,215 (rentang 0,196–0,235), cadangan karbon dengan faktor karbon 0,47, dan konversi ke CO₂e dengan faktor 44/12.",
+  "ipTable": [
+    {
+      "no": 1,
+      "ip": "Ditjen PDASRH",
+      "provinsi": "Aceh, Lampung, Sumatra Utara, dan 14 provinsi lainnya",
+      "tipeLahan": "Terestrial",
+      "target": 14080,
+      "real2024": 7413,
+      "real2025": 13428,
+      "lama2024": 6831,
+      "lama2025": 13170.37,
+      "baru2024": 513.93,
+      "baru2025": 806.87
+    },
+    {
+      "no": 1,
+      "ip": "Ditjen PDASRH",
+      "provinsi": "Sumatra Selatan, Jawa Timur, Bali, Lombok, Maluku",
+      "tipeLahan": "Mangrove",
+      "target": 309,
+      "real2024": 189,
+      "real2025": 309,
+      "lama2024": 13465,
+      "lama2025": 570.45,
+      "baru2024": 13465,
+      "baru2025": 570.45,
+      "note": "*"
+    },
+    {
+      "no": 1,
+      "ip": "Ditjen PDASRH",
+      "provinsi": "Jambi, Kalimantan Tengah",
+      "tipeLahan": "Gambut",
+      "target": 920,
+      "real2024": null,
+      "real2025": 1600,
+      "lama2024": 570.45,
+      "lama2025": 20678.42,
+      "baru2024": 570.45,
+      "baru2025": 20678.42
+    },
+    {
+      "no": 2,
+      "ip": "YBLL",
+      "provinsi": "NTT",
+      "tipeLahan": "Terestrial (Bambu)",
+      "target": 801.77,
+      "real2024": 20,
+      "real2025": 808.26,
+      "lama2024": 0.0005,
+      "lama2025": 0.04,
+      "baru2024": 0.19,
+      "baru2025": 14.8
+    },
+    {
+      "no": 2,
+      "ip": "YBLL",
+      "provinsi": "NTT",
+      "tipeLahan": "Terestrial (MPTS)",
+      "target": null,
+      "real2024": null,
+      "real2025": null,
+      "lama2024": 0.04,
+      "lama2025": 580.39,
+      "baru2024": 0.19,
+      "baru2025": 14.8,
+      "note": "†"
+    },
+    {
+      "no": 3,
+      "ip": "Ditjen PHL",
+      "provinsi": "Lampung, Kalimantan Selatan, Pekanbaru, dan 5 provinsi lainnya",
+      "tipeLahan": "Terestrial",
+      "target": 1035,
+      "real2024": null,
+      "real2025": 907,
+      "lama2024": null,
+      "lama2025": 976.91,
+      "baru2024": 0,
+      "baru2025": 38.2
+    },
+    {
+      "no": 4,
+      "ip": "Dishut Prov. Kalsel",
+      "provinsi": "Kalimantan Selatan",
+      "tipeLahan": "Terestrial",
+      "target": 305,
+      "real2024": null,
+      "real2025": 305,
+      "lama2024": 491,
+      "lama2025": 580.39,
+      "baru2024": 36.98,
+      "baru2025": 43.66,
+      "note": "†"
+    },
+    {
+      "no": 5,
+      "ip": "DLHK Prov. Riau",
+      "provinsi": "Riau",
+      "tipeLahan": "Gambut",
+      "target": 36,
+      "real2024": null,
+      "real2025": 36,
+      "lama2024": 0,
+      "lama2025": 14.09,
+      "baru2024": 0,
+      "baru2025": 14.09
+    },
+    {
+      "no": 6,
+      "ip": "Yayasan Paradigma",
+      "provinsi": "Riau",
+      "tipeLahan": "Mangrove",
+      "target": 100,
+      "real2024": null,
+      "real2025": null,
+      "lama2024": null,
+      "lama2025": null,
+      "baru2024": 17.25,
+      "baru2025": null
+    },
+    {
+      "no": 6,
+      "ip": "Yayasan Paradigma",
+      "provinsi": "Riau",
+      "tipeLahan": "Gambut",
+      "target": 200,
+      "real2024": null,
+      "real2025": 100,
+      "lama2024": 26.51,
+      "lama2025": 17.25,
+      "baru2024": 6.89,
+      "baru2025": 17.25
+    },
+    {
+      "no": 7,
+      "ip": "Ditjen PSKL",
+      "provinsi": "Sulawesi Selatan, Sulawesi Barat, Bali, dan 3 provinsi lainnya",
+      "tipeLahan": "Terestrial",
+      "target": 827.59,
+      "real2024": 305,
+      "real2025": 827.59,
+      "lama2024": 549,
+      "lama2025": 549.29,
+      "baru2024": 41.32,
+      "baru2025": 41.32
+    },
+    {
+      "no": 8,
+      "ip": "TGC IPB",
+      "provinsi": "Jambi",
+      "tipeLahan": "Gambut",
+      "target": 4,
+      "real2024": null,
+      "real2025": 4,
+      "lama2024": 2.99,
+      "lama2025": 2.99,
+      "baru2024": 2.99,
+      "baru2025": 2.99
+    },
+    {
+      "no": 9,
+      "ip": "Dishut Prov. Kalbar",
+      "provinsi": "Kalimantan Barat",
+      "tipeLahan": "Terestrial",
+      "target": 138,
+      "real2024": null,
+      "real2025": 135,
+      "lama2024": 40,
+      "lama2025": 71,
+      "baru2024": 2.99,
+      "baru2025": 5.35
+    },
+    {
+      "no": 10,
+      "ip": "BP2SDM (Pusluh)",
+      "provinsi": "Jambi, Lampung, Jawa Barat",
+      "tipeLahan": "Terestrial",
+      "target": 18.42,
+      "real2024": 18,
+      "real2025": 44,
+      "lama2024": 19,
+      "lama2025": 19,
+      "baru2024": 1.43,
+      "baru2025": 1.43
+    },
+    {
+      "no": 10,
+      "ip": "BP2SDM (Pusluh)",
+      "provinsi": "Jambi, Lampung, Jawa Barat",
+      "tipeLahan": "Mangrove",
+      "target": 1,
+      "real2024": 1,
+      "real2025": 1,
+      "lama2024": 17,
+      "lama2025": 17,
+      "baru2024": 17,
+      "baru2025": 17
+    },
+    {
+      "no": 10,
+      "ip": "BP2SDM (PGLHK)",
+      "provinsi": "Jawa Barat, Sulawesi Selatan, dan 14 provinsi lainnya",
+      "tipeLahan": "Terestrial",
+      "target": 74.2,
+      "real2024": 74,
+      "real2025": 38.56,
+      "lama2024": 76,
+      "lama2025": 76,
+      "baru2024": 5.75,
+      "baru2025": 5.75
+    },
+    {
+      "no": 11,
+      "ip": "Dishut Prov. Sumbar",
+      "provinsi": "Sumatra Barat",
+      "tipeLahan": "Terestrial",
+      "target": 150,
+      "real2024": 150,
+      "real2025": 150,
+      "lama2024": 39,
+      "lama2025": 39,
+      "baru2024": 2.91,
+      "baru2025": 2.91
+    },
+    {
+      "no": 12,
+      "ip": "BNGi",
+      "provinsi": "Jawa Barat, Jambi, NTB",
+      "tipeLahan": "Terestrial",
+      "target": 6,
+      "real2024": 0,
+      "real2025": 6,
+      "lama2024": 32,
+      "lama2025": 32,
+      "baru2024": 2.38,
+      "baru2025": 2.38
+    }
+  ],
+  "ipTotal": {
+    "target": 19006,
+    "real2024": 8170,
+    "real2025": 18699,
+    "lama2024": 22159,
+    "lama2025": 36814.2,
+    "baru2024": 14687.65,
+    "baru2025": 22277.68
+  },
+  "exAnte": {
+    "min": 19000,
+    "max": 34993,
+    "satuan": "tCO2e",
+    "keterangan": "Target capaian karbon apabila sesuai Rancangan Teknis yang diajukan IP",
+    "source": {
+      "status": "riil",
+      "dokumen": "Paparan Perhitungan PCK FOLU NC RBC1, Diskusi Karbon 23 Januari 2026",
+      "asOf": "30 Desember 2025"
+    }
+  },
+  "officialTotal": null
+}

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Calculator } from "lucide-react";
 import { Note, SectionTitle, Select, ToggleGroup } from "../components/ui";
 import { KARBON_CATEGORIES } from "../constants";
-import { ALL_IP_ROWS } from "../data/legacy";
+import { ALL_IP_ROWS } from "../data";
 import { MUDA_FORMULA_OPTIONS, computeCarbonFromMeasurement } from "../lib/carbon";
 import { CO2E, fmt, fmt1 } from "../lib/format";
 

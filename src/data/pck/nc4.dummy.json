@@ -1,0 +1,138 @@
+{
+  "pmu": "NC-4",
+  "source": {
+    "status": "dummy",
+    "dokumen": "Data contoh; belum ada dokumen sumber PMU NC-4",
+    "asOf": "—"
+  },
+  "meta": {
+    "title": "Ringkasan Peningkatan Cadangan Karbon NC-4 (dummy)",
+    "asOf": "data contoh"
+  },
+  "planting": {
+    "targetHa": 9800,
+    "realisasi2024Ha": 3100,
+    "realisasi2025Ha": 8700,
+    "pctOfTarget": 88.8
+  },
+  "methodComparison": [
+    {
+      "tahun": 2024,
+      "alometrikLama": 9600,
+      "adjustmentBaru": 6100
+    },
+    {
+      "tahun": 2025,
+      "alometrikLama": 19800,
+      "adjustmentBaru": 12400
+    }
+  ],
+  "interventions": [
+    {
+      "key": "terestrial",
+      "label": "Penanaman RHL Terestrial",
+      "icon": "TreePine",
+      "color": "#2C4A3A",
+      "estimasi": 8900,
+      "uncertaintyPct": 45,
+      "lower": 4895,
+      "upper": 12905,
+      "status": "Estimasi awal (dummy); perlu data diameter, tinggi, dan survival rate aktual."
+    },
+    {
+      "key": "mangrove",
+      "label": "Mangrove",
+      "icon": "Waves",
+      "color": "#2E6B6B",
+      "estimasi": 2600,
+      "uncertaintyPct": 50,
+      "lower": 1300,
+      "upper": 3900,
+      "status": "Estimasi awal (dummy); perlu pemisahan seedling/sapling dan monitoring substrat."
+    },
+    {
+      "key": "agroforestri",
+      "label": "Agroforestri & Masyarakat",
+      "icon": "Sprout",
+      "color": "#B9791F",
+      "estimasi": 900,
+      "uncertaintyPct": 50,
+      "lower": 450,
+      "upper": 1350,
+      "status": "Estimasi awal (dummy); perlu pemisahan jenis tanaman dan data kelompok."
+    }
+  ],
+  "total": {
+    "estimasi": 12400,
+    "uncertaintyPct": 50.2,
+    "lower": 6645,
+    "upper": 18155
+  },
+  "survival": [
+    {
+      "label": "IP Papua Tumbuh (P0)",
+      "value": 71
+    },
+    {
+      "label": "IP Papua Barat Lestari (P0)",
+      "value": 66
+    },
+    {
+      "label": "Rehabilitasi mangrove (rata-rata)",
+      "value": 55
+    }
+  ],
+  "methodNote": "Data ini bersifat dummy untuk keperluan demonstrasi antarmuka, disusun mengikuti format dan metodologi yang sama dengan adjustment alometrik NC-1 (Adinugroho et al., 2023). Belum merepresentasikan capaian aktual PMU NC-4.",
+  "ipTable": [
+    {
+      "no": 1,
+      "ip": "IP Papua Tumbuh",
+      "provinsi": "Papua Selatan, Papua Tengah, Papua",
+      "tipeLahan": "Terestrial",
+      "target": 6200,
+      "real2024": 1900,
+      "real2025": 5600,
+      "lama2024": 6800,
+      "lama2025": 13600,
+      "baru2024": 4200,
+      "baru2025": 8900
+    },
+    {
+      "no": 2,
+      "ip": "IP Papua Tumbuh",
+      "provinsi": "Papua Tengah",
+      "tipeLahan": "Mangrove",
+      "target": 1500,
+      "real2024": 700,
+      "real2025": 1450,
+      "lama2024": 1900,
+      "lama2025": 3900,
+      "baru2024": 1200,
+      "baru2025": 2600
+    },
+    {
+      "no": 3,
+      "ip": "IP Papua Barat Lestari",
+      "provinsi": "Papua Barat Daya",
+      "tipeLahan": "Terestrial",
+      "target": 2100,
+      "real2024": 500,
+      "real2025": 1650,
+      "lama2024": 900,
+      "lama2025": 2300,
+      "baru2024": 700,
+      "baru2025": 900
+    }
+  ],
+  "ipTotal": {
+    "target": 9800,
+    "real2024": 3100,
+    "real2025": 8700,
+    "lama2024": 9600,
+    "lama2025": 19800,
+    "baru2024": 6100,
+    "baru2025": 12400
+  },
+  "exAnte": null,
+  "officialTotal": null
+}

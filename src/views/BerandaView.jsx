@@ -1,77 +1,17 @@
 import React from "react";
 import { Note, SectionTitle } from "../components/ui";
 import { STRATEGY_ICONS } from "../constants";
-import { FOLU_BENEFICIARIES, FOLU_BIDANG, FOLU_BUDGET_2025, FOLU_MITIGATION_ACTIONS, FOLU_NORWAY, FOLU_OUTCOMES, FOLU_PROGRAM_FACTS, NC1_IP_TABLE, NC1_PHYSICAL_2025, NC1_PLANTING, NC1_TOTAL, NEWS, emissionRowsForYear, emissionTotalsForYear } from "../data/legacy";
+import { FOLU_BENEFICIARIES, FOLU_BIDANG, FOLU_BUDGET_2025, FOLU_MITIGATION_ACTIONS, FOLU_NORWAY, FOLU_OUTCOMES, FOLU_PROGRAM_FACTS, NC1_IP_TABLE, NC1_PHYSICAL_2025, NC1_PLANTING, NC1_TOTAL, NEWS, NATIONAL, DATA_SOURCES } from "../data";
 import { CO2E, fmt, fmt1 } from "../lib/format";
+import { claimable } from "../lib/carbon";
+import { SourceBadge } from "../components/SourceBadge";
 
-export function EmissionKpiStrip({ year }) {
-  const t = emissionTotalsForYear(year);
-  const items = [
-    { label: `Baseline emisi ${year}`, value: fmt1(t.baseline), unit: "juta tCO\u2082e" },
-    { label: `Capaian aktual ${year}`, value: fmt1(t.aktual), unit: "juta tCO\u2082e" },
-    { label: "Pengurangan emisi tercapai", value: fmt1(t.reduksi), unit: "juta tCO\u2082e", accent: true },
-    { label: "% dari baseline", value: `${Math.round((t.reduksi / t.baseline) * 100)}%`, unit: "tereduksi" },
-  ];
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #D6D2C4", borderBottom: "1px solid #D6D2C4" }}>
-      {items.map((it, i) => (
-        <div key={it.label} style={{ flex: "1 1 180px", padding: "16px 22px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 26, color: it.accent ? "#2C4A3A" : "#1B2A22", lineHeight: 1.1 }}>
-            {it.value}
-            <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>{it.unit}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function EmissionCategoryTable({ year }) {
-  const rows = emissionRowsForYear(year);
-  const totals = emissionTotalsForYear(year);
-  return (
-    <div style={{ border: "1px solid #D6D2C4" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13 }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid #D6D2C4" }}>
-            {["Kategori", "Baseline (juta tCO\u2082e)", "Capaian aktual (juta tCO\u2082e)", "Pengurangan emisi (juta tCO\u2082e)"].map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: "10px 16px", color: "#5C5A4E", fontWeight: 500, fontSize: 12 }}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key} style={{ borderBottom: "1px solid #E5E2D6" }}>
-              <td style={{ padding: "10px 16px", color: "#1B2A22", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 9, height: 9, background: r.color, display: "inline-block", flex: "none" }} />
-                {r.label}
-              </td>
-              <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.baseline)}</td>
-              <td style={{ padding: "10px 16px", color: "#5C5A4E" }}>{fmt1(r.aktual)}</td>
-              <td style={{ padding: "10px 16px", color: "#2C4A3A", fontWeight: 500 }}>{fmt1(r.reduksi)}</td>
-            </tr>
-          ))}
-          <tr>
-            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>Total</td>
-            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>{fmt1(totals.baseline)}</td>
-            <td style={{ padding: "10px 16px", color: "#1B2A22", fontWeight: 600 }}>{fmt1(totals.aktual)}</td>
-            <td style={{ padding: "10px 16px", color: "#2C4A3A", fontWeight: 600 }}>{fmt1(totals.reduksi)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export function BerandaView({ year, setTab }) {
+export function BerandaView({ setTab }) {
   return (
     <div>
       <div style={{ padding: "26px 0 22px", borderBottom: "1px solid #D6D2C4" }}>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#2C4A3A", marginBottom: 8, letterSpacing: 0.3 }}>
-          PROGRAM NASIONAL &middot; KEMENTERIAN LINGKUNGAN HIDUP DAN KEHUTANAN
+          PROGRAM NASIONAL &middot; KEMENTERIAN KEHUTANAN
         </div>
         <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 30, color: "#1B2A22", lineHeight: 1.2, marginBottom: 12, maxWidth: 760 }}>
           Indonesia's FOLU Net Sink 2030
@@ -188,6 +128,7 @@ export function BerandaView({ year, setTab }) {
             {[
               { label: "Realisasi tanam 2025", value: fmt(NC1_PLANTING.realisasi2025Ha), unit: "ha" },
               { label: "Potensi karbon 2025 (adjustment)", value: fmt1(NC1_TOTAL.estimasi), unit: CO2E, accent: true },
+              { label: `Nilai klaim konservatif (buffer ${claimable(NC1_TOTAL).buffer}%)`, value: fmt1(claimable(NC1_TOTAL).value), unit: CO2E },
               { label: "Implementing partner terlibat", value: fmt(new Set(NC1_IP_TABLE.map((r) => r.ip)).size), unit: "IP" },
             ].map((it, i) => (
               <div key={it.label} style={{ flex: "1 1 200px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
@@ -202,7 +143,7 @@ export function BerandaView({ year, setTab }) {
           <div style={{ display: "flex", gap: 14, marginTop: 14, flexWrap: "wrap" }}>
             {[
               ["pengukuran", "Lihat rincian Pengukuran \u2192"],
-              ["pelaporan", "Lihat Pelaporan resmi \u2192"],
+              ["pelaporan", "Lihat kinerja nasional (Lapis A) \u2192"],
               ["karbon", "Lihat detail Karbon NC-1 \u2192"],
               ["peta", "Buka Peta lokasi kegiatan \u2192"],
             ].map(([key, label]) => (
@@ -324,22 +265,31 @@ export function BerandaView({ year, setTab }) {
         </div>
 
         <div style={{ marginTop: 30 }}>
-          <SectionTitle>Ilustrasi ringkasan emisi tahunan (data contoh)</SectionTitle>
-          <Note tone="warn">
-            Bagian di bawah ini <strong>dummy</strong> &mdash; ilustrasi format ringkasan baseline vs. capaian aktual per kategori
-            emisi, seperti yang lazim ditampilkan pada laporan MRV provinsi. Belum ada data nasional resmi tahun-berjalan yang
-            terintegrasi ke dashboard ini.
-          </Note>
-          <div style={{ marginTop: 12 }}>
-            <EmissionKpiStrip year={year} />
+          <SectionTitle>Kinerja pengurangan emisi nasional (Lapis A)</SectionTitle>
+          <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid #D6D2C4" }}>
+            {[
+              { label: `Baseline FREL (${NATIONAL.baseline.periode})`, value: fmt1(NATIONAL.baseline.nilai), unit: "juta tCO\u2082e/tahun" },
+              ...NATIONAL.kontribusi.slice(-2).map((k) => ({ label: `Pengurangan emisi ${k.periode}`, value: fmt1(k.erJutaTco2e), unit: "juta tCO\u2082e", accent: true })),
+            ].map((it, i) => (
+              <div key={it.label} style={{ flex: "1 1 200px", padding: "16px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 22, color: it.accent ? "#2C4A3A" : "#1B2A22" }}>
+                  {it.value}
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "#5C5A4E", marginLeft: 5 }}>{it.unit}</span>
+                </div>
+              </div>
+            ))}
           </div>
-          <div style={{ marginTop: 12 }}>
-            <EmissionCategoryTable year={year} />
+          <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <SourceBadge source={DATA_SOURCES.national} compact />
+            <button onClick={() => setTab("pelaporan")} style={{ background: "none", border: "none", padding: 0, color: "#2C4A3A", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>
+              Lihat rincian per periode RBC dan target ENDC
+            </button>
           </div>
         </div>
 
         <div style={{ marginTop: 30 }}>
-          <SectionTitle>Berita terbaru</SectionTitle>
+          <SectionTitle>Berita terbaru <SourceBadge source={DATA_SOURCES.news} compact /></SectionTitle>
           <div style={{ border: "1px solid #D6D2C4" }}>
             {NEWS.map((n, i) => (
               <div key={n.title} style={{ padding: "16px 18px", borderTop: i === 0 ? "none" : "1px solid #E5E2D6" }}>

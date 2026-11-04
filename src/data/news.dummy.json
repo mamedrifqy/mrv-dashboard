@@ -1,0 +1,24 @@
+{
+  "source": {
+    "status": "dummy",
+    "dokumen": "Contoh berita untuk demonstrasi antarmuka",
+    "asOf": "—"
+  },
+  "items": [
+    {
+      "title": "Verifikasi capaian pengurangan emisi tahun 2021 diselesaikan",
+      "date": "12 Maret 2022",
+      "excerpt": "Tim verifikator independen menyelesaikan proses telaah dokumen dan kunjungan lapangan untuk capaian tahun laporan 2021."
+    },
+    {
+      "title": "Pembaruan basemap dan lapisan aksi mitigasi pada Peta MRV",
+      "date": "28 Januari 2022",
+      "excerpt": "Lapisan batas administrasi dan aksi mitigasi pada modul Peta diperbarui mengikuti data terbaru dari perangkat daerah terkait."
+    },
+    {
+      "title": "Sosialisasi metodologi pengukuran emisi kepada perangkat daerah",
+      "date": "05 Desember 2021",
+      "excerpt": "Kegiatan sosialisasi metodologi pengukuran baseline dan capaian aktual dilaksanakan bersama dinas lingkungan hidup kabupaten/kota."
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { STATUS_META } from "../constants";
-import { NC1_IP_TABLE } from "../data/legacy";
+import { NC1_IP_TABLE } from "../data";
 import { CO2E, fmt, fmt1 } from "../lib/format";
 
 export function StatusBadge({ status }) {
@@ -24,15 +24,19 @@ export function StatusBadge({ status }) {
 }
 
 export function KpiStrip({ sites }) {
+  // PCK langsung (penanaman) dan PPCK deforestasi dipisah: keduanya beda
+  // metode dan beda lapis akuntansi, sehingga tidak boleh dijumlahkan.
   const totalLuas = sites.reduce((a, s) => a + s.luas, 0);
-  const totalPck = sites.reduce((a, s) => a + s.pck, 0);
+  const pckLangsung = sites.filter((s) => s.jenisPck !== "Deforestasi").reduce((a, s) => a + s.pck, 0);
+  const ppckDefor = sites.filter((s) => s.jenisPck === "Deforestasi").reduce((a, s) => a + s.pck, 0);
   const verified = sites.filter((s) => s.status === "Terverifikasi").length;
   const flagged = sites.filter((s) => s.status !== "Terverifikasi").length;
 
   const items = [
     { label: "Lokasi kegiatan", value: sites.length, unit: "lokasi" },
     { label: "Luas total", value: fmt(totalLuas), unit: "hektare" },
-    { label: "Cadangan karbon", value: fmt(totalPck), unit: "tCO\u2082e" },
+    { label: "PCK langsung (penanaman)", value: fmt(pckLangsung), unit: CO2E },
+    { label: "PPCK deforestasi", value: fmt(ppckDefor), unit: CO2E },
     { label: "Terverifikasi", value: verified, unit: `dari ${sites.length}` },
     { label: "Perlu tindak lanjut", value: flagged, unit: "lokasi", warn: flagged > 0 },
   ];
@@ -40,9 +44,9 @@ export function KpiStrip({ sites }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid #D6D2C4", borderBottom: "1px solid #D6D2C4" }}>
       {items.map((it, i) => (
-        <div key={it.label} style={{ flex: "1 1 160px", padding: "16px 22px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
+        <div key={it.label} style={{ flex: "1 1 150px", padding: "14px 20px", borderLeft: i === 0 ? "none" : "1px solid #D6D2C4" }}>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, color: "#5C5A4E", marginBottom: 4 }}>{it.label}</div>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 26, color: it.warn ? "#A23B3B" : "#1B2A22", lineHeight: 1.1 }}>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 24, color: it.warn ? "#A23B3B" : "#1B2A22", lineHeight: 1.1 }}>
             {it.value}
             <span style={{ fontSize: 13, fontWeight: 400, color: "#5C5A4E", marginLeft: 6 }}>{it.unit}</span>
           </div>

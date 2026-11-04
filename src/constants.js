@@ -1,11 +1,6 @@
 import { TreePine, Waves, Flame, AlertTriangle, CheckCircle2, HelpCircle, XCircle, Sprout, Droplets, Shield } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Dummy data standing in for what would come from Dashboard OMO in production.
-// Province basemap below is real (simplified from the user-supplied GeoJSON);
-// everything else — sites, IPs, AOI shapefiles, carbon figures — is fictional
-// and built only to demonstrate the interface.
-// ---------------------------------------------------------------------------
+// Konstanta tampilan (warna, ikon, kategori) yang dipakai lintas view.
 
 export const PMU_META = {
   "NC-1": { color: "#2C4A3A", label: "PMU NC-1" },
@@ -52,5 +47,4 @@ export function tipeLahanToCategory(tipeLahan) {
   return "Terestrial";
 }
 
-// --- Beranda (Homepage) -----------------------------------------------------
 export const STRATEGY_ICONS = { Shield, TreePine, Droplets, Sprout };

@@ -1,0 +1,260 @@
+{
+  "source": {
+    "status": "riil",
+    "dokumen": "Laporan Tahunan FOLU NC-1 TA 2025 (Tabel 4.1, 6.7, 6.8, Bab 1.3); siaran pers dan regulasi KLHK",
+    "asOf": "30 Juni 2026"
+  },
+  "facts": {
+    "legalBasis": [
+      {
+        "label": "Peraturan Presiden No. 98 Tahun 2021",
+        "desc": "Penyelenggaraan Nilai Ekonomi Karbon (NEK) untuk pencapaian target NDC dan pengendalian emisi GRK. Pasal 3 ayat (4) menetapkan sektor kehutanan sebagai pendukung utama melalui pendekatan carbon net sink."
+      },
+      {
+        "label": "Kepmen LHK No. SK.168/MENLHK/PKTL/PLA.1/2/2022",
+        "desc": "Ditetapkan 24 Februari 2022, mengatur Indonesia's FOLU Net Sink 2030 untuk pengendalian perubahan iklim beserta susunan tim pelaksana."
+      }
+    ],
+    "target": "-140 juta ton CO₂e (net sink) pada tahun 2030",
+    "definition": "Kondisi ketika tingkat serapan emisi GRK dari sektor kehutanan dan penggunaan lahan lainnya (Forestry and Other Land Use) sama dengan atau lebih tinggi daripada tingkat emisi yang dihasilkan.",
+    "ndcContext": {
+      "before": "29% (upaya sendiri) / 41% (dengan dukungan internasional)",
+      "after": "31,89% (upaya sendiri) / 43,20% (dengan dukungan internasional)",
+      "foluShare": "17,4% (upaya sendiri) dan 25,4% (dengan kerja sama internasional) dari total target penurunan emisi nasional",
+      "forestrySectorShare": "sekitar 60% dari pemenuhan target netral karbon (NZE) nasional",
+      "updatedAt": "Enhanced NDC, September 2022"
+    },
+    "history": [
+      {
+        "year": "2015",
+        "text": "Persetujuan Paris (COP21 UNFCCC) disepakati; Indonesia meratifikasi melalui UU No. 16 Tahun 2016."
+      },
+      {
+        "year": "2021",
+        "text": "Presiden RI berkomitmen pada COP26 Glasgow agar sektor kehutanan dan lahan Indonesia menjadi penyerap karbon bersih paling lambat 2030; Perpres 98/2021 diterbitkan."
+      },
+      {
+        "year": "2022",
+        "text": "Kepmen LHK 168/2022 ditetapkan (Februari); dokumen Rencana Operasional FOLU Net Sink 2030 rampung; Enhanced NDC diserahkan ke UNFCCC (September)."
+      },
+      {
+        "year": "2022–kini",
+        "text": "Sosialisasi Rencana Operasional dilakukan berjenjang ke tingkat regional dan sub-nasional di provinsi-provinsi prioritas."
+      }
+    ],
+    "strategies": [
+      {
+        "key": "deforestasi",
+        "label": "Menghindari Deforestasi",
+        "icon": "Shield",
+        "desc": "Mengendalikan alih fungsi hutan alam dan lahan agar tidak menambah emisi dari deforestasi."
+      },
+      {
+        "key": "konservasi",
+        "label": "Konservasi & Pengelolaan Hutan Lestari",
+        "icon": "TreePine",
+        "desc": "Menjaga tutupan hutan yang tersisa melalui pengelolaan hutan produksi dan konservasi berkelanjutan."
+      },
+      {
+        "key": "gambut",
+        "label": "Perlindungan & Restorasi Gambut",
+        "icon": "Droplets",
+        "desc": "Memulihkan hidrologi lahan gambut dan mencegah kebakaran serta dekomposisi karbon organik."
+      },
+      {
+        "key": "serapan",
+        "label": "Peningkatan Serapan Karbon",
+        "icon": "Sprout",
+        "desc": "Rehabilitasi hutan dan lahan, penanaman mangrove, agroforestri, dan bambu untuk menambah cadangan karbon (basis data NC-1 di dashboard ini)."
+      }
+    ],
+    "sourceNote": "Disusun dari siaran pers dan laman resmi Kementerian Lingkungan Hidup dan Kehutanan (KLHK), per pengetahuan hingga awal 2026."
+  },
+  "beneficiaries": {
+    "total": 121408,
+    "lakiLaki": 81240,
+    "perempuan": 40168,
+    "categories": [
+      {
+        "label": "Kelompok Muda",
+        "total": 54724,
+        "pct": 45.07,
+        "l": 28131,
+        "p": 26593
+      },
+      {
+        "label": "Petani / KTH / KUPS",
+        "total": 47938,
+        "pct": 39.49,
+        "l": 37794,
+        "p": 10144
+      },
+      {
+        "label": "Pemangku Kepentingan",
+        "total": 6002,
+        "pct": 4.94,
+        "l": null,
+        "p": null
+      },
+      {
+        "label": "SDM KLHK",
+        "total": 4433,
+        "pct": 3.65,
+        "l": null,
+        "p": null
+      },
+      {
+        "label": "Unsur Masyarakat Lainnya",
+        "total": 3981,
+        "pct": 3.28,
+        "l": null,
+        "p": null
+      },
+      {
+        "label": "Masyarakat Adat",
+        "total": 2093,
+        "pct": 1.72,
+        "l": 1866,
+        "p": 227
+      },
+      {
+        "label": "Masyarakat Peduli Api",
+        "total": 1210,
+        "pct": 1,
+        "l": null,
+        "p": null
+      },
+      {
+        "label": "Akademisi",
+        "total": 1027,
+        "pct": 0.85,
+        "l": 517,
+        "p": 510
+      }
+    ],
+    "ipCount": 19
+  },
+  "budget2025": {
+    "totalPaguKeseluruhan": 797417840873,
+    "paguAwp2025": 316572685803,
+    "realisasi2025": 298002173775,
+    "persenRealisasi": 94.13,
+    "sisaAnggaran": 18570512028,
+    "perProgram": [
+      {
+        "program": "Program I — Pengelolaan Hutan Lestari",
+        "pagu": 143156726582,
+        "awp": 68701338491,
+        "realisasi": 65224112407,
+        "persen": 94.94
+      },
+      {
+        "program": "Program II — Peningkatan Cadangan Karbon",
+        "pagu": 507000000000,
+        "awp": 205010630718,
+        "realisasi": 194680512018,
+        "persen": 94.96
+      },
+      {
+        "program": "Program III — Konservasi",
+        "pagu": 10000000000,
+        "awp": 6480659925,
+        "realisasi": 5563137939,
+        "persen": 85.84
+      },
+      {
+        "program": "Program V — Instrumen dan Informasi",
+        "pagu": 104162501946,
+        "awp": 21776110658,
+        "realisasi": 18760597557,
+        "persen": 86.15
+      },
+      {
+        "program": "PMU NC-1",
+        "pagu": 33098612345,
+        "awp": 14603946011,
+        "realisasi": 13773813854,
+        "persen": 94.32
+      }
+    ]
+  },
+  "nc1Physical2025": {
+    "targetHa": 20593,
+    "realisasiHa": 18672,
+    "aforestasiHa": 1923,
+    "reforestasiHa": 16749,
+    "pctOfTarget": 90.67,
+    "pctReforestasiOfRealisasi": 89.7
+  },
+  "bidang": [
+    {
+      "key": "I",
+      "label": "Bidang I — Pengelolaan Hutan Lestari",
+      "desc": "Mencegah dan mengurangi deforestasi serta degradasi hutan."
+    },
+    {
+      "key": "II",
+      "label": "Bidang II — Peningkatan Cadangan Karbon",
+      "desc": "Rehabilitasi hutan dan lahan, rehabilitasi mangrove, dan pemulihan ekosistem (basis data NC-1 di dashboard ini)."
+    },
+    {
+      "key": "III",
+      "label": "Bidang III — Konservasi",
+      "desc": "Konservasi keanekaragaman hayati dan perlindungan ekosistem bernilai penting."
+    },
+    {
+      "key": "IV",
+      "label": "Bidang IV — Pengelolaan Ekosistem Gambut",
+      "desc": "Restorasi dan perbaikan tata air ekosistem gambut."
+    },
+    {
+      "key": "V",
+      "label": "Bidang V — Instrumen dan Informasi",
+      "desc": "Peningkatan kapasitas, penegakan hukum, dan penguatan tata kelola pendukung."
+    }
+  ],
+  "outcomes": [
+    {
+      "key": 1,
+      "label": "Outcome 1: Pengurangan Emisi GRK",
+      "desc": "Aksi mitigasi sektor FOLU: pengurangan deforestasi/degradasi, rehabilitasi hutan dan lahan, rehabilitasi mangrove, restorasi gambut, dan pengelolaan hutan lestari."
+    },
+    {
+      "key": 2,
+      "label": "Outcome 2: Akses Masyarakat & Manfaat Ekosistem",
+      "desc": "Penguatan perhutanan sosial, peningkatan kapasitas kelompok masyarakat, dan manfaat ekonomi dari pengelolaan sumber daya hutan berkelanjutan."
+    },
+    {
+      "key": 3,
+      "label": "Outcome 3: Tata Kelola Karbon & Hutan",
+      "desc": "Penguatan kebijakan, kelembagaan, sistem informasi, kapasitas SDM, penegakan hukum, dan MRV (monitoring, reporting, verification)."
+    }
+  ],
+  "norway": {
+    "mouDate": "12 September 2022",
+    "mouParties": "KLHK (Indonesia) dan Ministry of Climate and Environment/MCE (Norwegia)",
+    "mouDuration": "5 tahun",
+    "agreementDate": "19 Oktober 2022",
+    "firstContributionUsd": 56000000,
+    "firstContributionTonCo2e": 11200000,
+    "firstContributionPeriod": "2016–2017",
+    "fundManager": "Badan Pengelolaan Dana Lingkungan Hidup (BPDLH)"
+  },
+  "mitigationActions": [
+    "Pengurangan laju deforestasi lahan mineral",
+    "Pengurangan laju deforestasi lahan gambut dan mangrove",
+    "Pengurangan laju degradasi hutan-hutan lahan mineral",
+    "Pengurangan laju degradasi hutan lahan gambut dan mangrove",
+    "Pembangunan hutan tanaman",
+    "Pengelolaan hutan lestari",
+    "Rehabilitasi dengan rotasi",
+    "Rehabilitasi non-rotasi",
+    "Restorasi gambut dan perbaikan tata air gambut",
+    "Rehabilitasi mangrove dan aforestasi pada kawasan bekas tambang",
+    "Konservasi keanekaragaman hayati",
+    "Perhutanan sosial",
+    "Introduksi replikasi ekosistem, ruang terbuka hijau, dan ekoriparian",
+    "Pengembangan dan konsolidasi hutan adat",
+    "Pengawasan dan law enforcement dalam mendukung perlindungan dan pengamanan kawasan hutan"
+  ]
+}

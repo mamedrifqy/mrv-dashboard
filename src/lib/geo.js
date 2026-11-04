@@ -1,6 +1,6 @@
 import L from "leaflet";
 import { NC1_TIPE_COLOR } from "../constants";
-import { NC1_IP_TABLE, SITES } from "../data/legacy";
+import { NC1_IP_TABLE, SITES } from "../data";
 
 // ---------------------------------------------------------------------------
 // NC-1 map showcase data: a representative point per implementing-partner

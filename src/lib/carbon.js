@@ -48,7 +48,8 @@ export function computeMudaMangroveMulyana({ diameter }) {
     isDirectCarbon: true,
     formulaLabel: "Mulyana et al. (2021), semai mangrove (karbon langsung, Dp)",
     formulaNote:
-      "Persamaan ini langsung menghasilkan KARBON (gram) dari diameter PANGKAL (Dp); tidak dikali 0,47 lagi. AGB/BGB tidak ditampilkan.",
+      "Persamaan ini langsung menghasilkan KARBON (gram) dari diameter PANGKAL (Dp); tidak dikali 0,47 lagi. AGB/BGB tidak ditampilkan. " +
+      "Perhatian: koefisien model power pada abstrak artikel (berat kering Y = 35,013 Dp^1,860) berbeda dengan Tabel 3 (Y = 12,415 Dp^1,804); konfirmasi ke penulis sebelum dipakai sebagai persamaan baku.",
   };
 }
 
@@ -116,4 +117,82 @@ export function computeCarbonFromMeasurement({ jenis, fase, mudaSumber, jumlahTa
   const co2ePerTreeKg = carbonPerTree * (44 / 12);
   const totalCo2eTon = (co2ePerTreeKg * jumlahTanaman) / 1000;
   return { agbPerTree, bgbPerTree, totalBiomassaPerTree, carbonPerTree, co2ePerTreeKg, totalCo2eTon, formulaLabel, formulaNote };
+}
+
+// ---------------------------------------------------------------------------
+// Buffer uncertainty — Tabel 7, Kerangka Metodologi Perhitungan Pengurangan
+// Emisi/Peningkatan Serapan GRK Sektor FOLU (Ditjen PPI, Oktober 2023).
+// ---------------------------------------------------------------------------
+export const BUFFER_TABLE = [
+  { maxPct: 15, buffer: 0, label: "≤ 15%" },
+  { maxPct: 30, buffer: 4, label: "> 15% – ≤ 30%" },
+  { maxPct: 60, buffer: 8, label: "> 30% – ≤ 60%" },
+  { maxPct: 100, buffer: 12, label: "> 60% – ≤ 100%" },
+  { maxPct: Infinity, buffer: 15, label: "> 100%" },
+];
+
+export function bufferFactorPct(uncertaintyPct) {
+  if (uncertaintyPct == null || Number.isNaN(uncertaintyPct)) return null;
+  return BUFFER_TABLE.find((b) => uncertaintyPct <= b.maxPct).buffer;
+}
+
+// Nilai yang dapat diklaim: estimasi dikurangi buffer. Bila uncertainty belum
+// dilaporkan, nilai klaim tidak dihitung (null) — bukan dianggap 0%.
+export function claimable(total) {
+  const buffer = bufferFactorPct(total?.uncertaintyPct);
+  if (buffer == null) return { buffer: null, value: null };
+  return { buffer, value: total.estimasi * (1 - buffer / 100) };
+}
+
+// ---------------------------------------------------------------------------
+// Uji kewajaran otomatis (Pedoman MRV Draf 1, Tabel 6.1). Hasilnya adalah
+// penanda "perlu klarifikasi", bukan kesimpulan bahwa data salah.
+// ---------------------------------------------------------------------------
+export const QC_RULES = {
+  "QC-01": "Nilai tCO₂e identik pada ≥ 2 IP berbeda",
+  "QC-02": "Jumlah baris ≠ total resmi dokumen",
+  "QC-03": "Intensitas tCO₂e/ha > 10× median tipe lahan yang sama",
+  "QC-05": "PCK > 0 tetapi realisasi luas kosong/0",
+  "QC-06": "Nilai alometrik lama = adjustment (adjustment mungkin belum diterapkan)",
+};
+
+const median = (arr) => {
+  const s = [...arr].sort((a, b) => a - b);
+  if (!s.length) return null;
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+
+export const intensity = (r) => (r.baru2025 > 0 && r.real2025 > 0 ? r.baru2025 / r.real2025 : null);
+
+// rows: baris IP (boleh lintas PMU). categoryOf: fungsi tipeLahan -> kategori.
+// Mengembalikan Map dari indeks baris -> daftar kode QC.
+export function qcFlags(rows, categoryOf) {
+  const flags = rows.map(() => new Set());
+  // QC-01
+  const byValue = {};
+  rows.forEach((r, i) => {
+    if (r.baru2025 > 0) (byValue[r.baru2025] ||= []).push(i);
+  });
+  Object.values(byValue).forEach((idx) => {
+    if (new Set(idx.map((i) => rows[i].ip)).size >= 2) idx.forEach((i) => flags[i].add("QC-01"));
+  });
+  // QC-03 (median dihitung dari seluruh baris riil yang diberikan)
+  const byCat = {};
+  rows.forEach((r, i) => {
+    const v = intensity(r);
+    if (v != null) (byCat[categoryOf(r.tipeLahan)] ||= []).push([i, v]);
+  });
+  Object.values(byCat).forEach((pairs) => {
+    if (pairs.length < 3) return;
+    const med = median(pairs.map(([, v]) => v));
+    pairs.forEach(([i, v]) => {
+      if (med > 0 && v > 10 * med) flags[i].add("QC-03");
+    });
+  });
+  rows.forEach((r, i) => {
+    if (r.baru2025 > 0 && !(r.real2025 > 0)) flags[i].add("QC-05");
+    if (r.lama2025 != null && r.baru2025 != null && r.lama2025 > 0 && r.lama2025 === r.baru2025) flags[i].add("QC-06");
+  });
+  return flags.map((s) => [...s].sort());
 }

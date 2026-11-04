@@ -2,7 +2,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Filter } from "lucide-react";
 import { KpiStrip, Nc1PetaKpiStrip, Select, ToggleGroup } from "./components/ui";
 import { PMU_META, STATUS_META } from "./constants";
-import { ALL_IP_ROWS, EMISSION_YEARS, NC1_IP_TABLE, REPORT_DATA, SITES } from "./data/legacy";
+import { ALL_IP_ROWS, REAL_IP_ROWS, NC1_IP_TABLE, REPORT_DATA, SITES } from "./data";
+import { DemoBanner } from "./components/SourceBadge";
+import { DataDictionaryView } from "./views/DataDictionaryView";
 import { BerandaView } from "./views/BerandaView";
 import { CarbonView } from "./views/CarbonView";
 import { MeasurementView } from "./views/MeasurementView";
@@ -11,7 +13,6 @@ import { SpatialView } from "./views/SpatialView";
 
 export default function App() {
   const [tab, setTab] = useState("beranda");
-  const [year, setYear] = useState(EMISSION_YEARS[EMISSION_YEARS.length - 1]);
   const [pmuFilter, setPmuFilter] = useState("Semua");
   const [ipFilter, setIpFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
@@ -35,7 +36,7 @@ export default function App() {
 
   const ipOptions = useMemo(() => {
     if (tab === "karbon") {
-      const scoped = pmuFilter === "Semua" ? ALL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.pmu === pmuFilter);
+      const scoped = pmuFilter === "Semua" ? REAL_IP_ROWS : ALL_IP_ROWS.filter((r) => r.pmu === pmuFilter);
       return ["Semua", ...Array.from(new Set(scoped.map((r) => r.ip))).sort()];
     }
     if (tab === "peta" && petaMode === "sebaran") {
@@ -66,6 +67,20 @@ export default function App() {
 
   const isKarbonReportPanel = tab === "karbon" && !!REPORT_DATA[pmuFilter];
 
+  // Sumber data yang tampil pada tab aktif, untuk banner mode demo.
+  const demoSources = (() => {
+    if (tab === "beranda") return ["program", "national", "news"];
+    if (tab === "pengukuran") return ["measurement"];
+    if (tab === "peta") {
+      if (petaMode === "lokasi" && pmuFilter !== "NC-1") return ["sites"];
+      if (petaMode === "lokasi") return ["nc1-aoi"];
+      if (petaMode === "sebaran") return ["sebaran"];
+      return ["provinsi"];
+    }
+    if (tab === "karbon") return pmuFilter === "Semua" ? [] : [`pck-${pmuFilter}`];
+    return [];
+  })();
+
   return (
     <div style={{ background: "#EEF0E7", minHeight: "100%", fontFamily: "'IBM Plex Sans', sans-serif" }}>
       <style>{`
@@ -82,9 +97,10 @@ export default function App() {
             {[
               ["beranda", "Beranda"],
               ["pengukuran", "Pengukuran"],
-              ["pelaporan", "Pelaporan"],
+              ["pelaporan", "Nasional"],
               ["peta", "Peta"],
               ["karbon", "Karbon"],
+              ["data", "Kamus Data"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -108,7 +124,8 @@ export default function App() {
       </div>
 
       {tab === "peta" && pmuFilter === "NC-1" && petaMode === "lokasi" && <Nc1PetaKpiStrip ipFilter={ipFilter} />}
-      {((tab === "peta" && petaMode === "lokasi" && pmuFilter !== "NC-1") || (tab === "karbon" && !isKarbonReportPanel)) && <KpiStrip sites={filteredSites} />}
+      <DemoBanner sourceKeys={demoSources} />
+      {tab === "peta" && petaMode === "lokasi" && pmuFilter !== "NC-1" && <KpiStrip sites={filteredSites} />}
 
       <div style={{ padding: "18px 26px 40px", maxWidth: 1180, margin: "0 auto" }}>
         {tab === "peta" && (
@@ -155,16 +172,16 @@ export default function App() {
           </div>
         )}
 
-        {tab === "beranda" && <BerandaView year={year} setTab={setTab} />}
+        {tab === "beranda" && <BerandaView setTab={setTab} />}
         {tab === "pengukuran" && <MeasurementView />}
         {tab === "pelaporan" && <ReportingView />}
         {tab === "peta" && <SpatialView sites={filteredSites} selected={selected} setSelected={setSelected} pmuFilter={pmuFilter} ipFilter={ipFilter} petaMode={petaMode} />}
-        {tab === "karbon" && <CarbonView sites={filteredSites} pmuFilter={pmuFilter} ipFilter={ipFilter} />}
+        {tab === "karbon" && <CarbonView pmuFilter={pmuFilter} ipFilter={ipFilter} />}
+        {tab === "data" && <DataDictionaryView />}
 
         <div style={{ marginTop: 22, fontSize: 11.5, color: "#8A8677", lineHeight: 1.6 }}>
-          {tab === "peta" || tab === "karbon"
-            ? "Peta dasar dan batas provinsi bersumber dari data geografis riil (citra satelit Esri & GeoJSON provinsi Indonesia) sehingga dapat di-zoom dan digeser. Namun lokasi AOI, IP, dan angka capaian/karbon pada peta ini tetap data contoh (dummy) untuk keperluan demonstrasi antarmuka, disusun mengikuti struktur Pedoman MRV Terpadu Indonesia's FOLU Net Sink 2030. Belum merepresentasikan capaian aktual program."
-            : "Seluruh angka baseline, capaian aktual, dan pengurangan emisi pada halaman ini adalah data contoh (dummy) untuk keperluan demonstrasi antarmuka. Belum merepresentasikan capaian aktual program."}
+          Setiap panel diberi label <em>Data riil</em> (dengan dokumen sumber) atau <em>Data contoh</em>. Data contoh hanya untuk
+          demonstrasi antarmuka dan tidak dijumlahkan ke total resmi. Struktur data mengikuti Pedoman MRV Terpadu Draf 1 (Lampiran A).
         </div>
       </div>
     </div>
