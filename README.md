@@ -44,15 +44,51 @@ Open the URL it prints (usually http://localhost:5173).
 ## Project structure
 
 ```
-index.html          – HTML entry point (required by every static site/browser)
-src/main.jsx         – mounts the React app into index.html
-src/App.jsx           – the dashboard itself (map, filters, charts)
-vite.config.js         – build config, incl. the GitHub Pages base path
-.github/workflows/deploy.yml – builds and deploys on every push to main
+src/
+  App.jsx                 – shell: tab, filter, banner mode demo
+  constants.js            – warna, ikon, kategori tipe lahan
+  data/
+    index.js              – satu pintu data; menandai riil vs dummy
+    national.json         – Lapis A: baseline FREL, kontribusi RBC, target ENDC (riil)
+    program.json          – konteks program di Beranda (riil)
+    pck/nc1.json          – PCK NC-1, Laporan Tahunan TA 2025 (riil)
+    pck/nc23.json         – PCK NC-2&3, Juknis Revisi 1 (riil)
+    pck/nc4.dummy.json    – PCK NC-4 (data contoh, tidak ikut total)
+    sites.dummy.json      – lokasi contoh untuk tab Peta
+    news.dummy.json       – berita contoh
+    schema.js             – kamus data T1–T4 (Pedoman MRV Draf 1, Lampiran A)
+    qc.js                 – uji kewajaran atas baris riil
+  lib/                    – format angka, rumus alometrik, buffer, QC, geometri
+  components/             – UI umum, peta, SourceBadge/DemoBanner
+  views/                  – Beranda, Pengukuran, Nasional, Peta, Karbon, Kamus Data
 ```
+
+## Data riil vs data contoh
+
+Setiap berkas JSON memuat `source: { status, dokumen, asOf }`. Berkas data
+contoh diberi akhiran `.dummy.json` dan `status: "dummy"`. Akibatnya:
+
+- panel menampilkan label *Data riil* (beserta dokumen sumber) atau *Data contoh*;
+- banner **Mode demo** muncul pada tab yang memakai data contoh;
+- ringkasan **Semua PMU** di tab Karbon hanya menjumlahkan PMU berdata riil,
+  kecuali pengguna mencentang *Sertakan data contoh*.
+
+Untuk mengganti data NC-4 dengan data resmi: buat `src/data/pck/nc4.json`
+dengan struktur yang sama seperti `nc1.json`, isi `source.status` dengan
+`"riil"`, lalu ubah impor di `src/data/index.js`.
+
+## Lapis akuntansi karbon
+
+- **Lapis A (tab Nasional)**: pengurangan emisi nasional, dasar RBC (juta tCO₂e).
+- **Lapis B (tab Karbon)**: PCK langsung dari penanaman IP (tCO₂e), dengan
+  uncertainty, buffer (Tabel 7 Kerangka Metodologi FOLU 2023), dan uji
+  kewajaran (QC-01 s.d. QC-06).
+
+Keduanya tidak dijumlahkan.
 
 ## Notes
 
-- All site, IP, and carbon-figure data in `src/App.jsx` is dummy data for
-  demonstration. Province boundaries are real, simplified from a GeoJSON.
+- Province boundaries are real, simplified from a GeoJSON. Attributes in
+  `indonesia_provinsi_folu_ro_emisi.geojson` are not yet verified; the GHG
+  column definitions are documented in the Choropleth view.
 - No backend or database — everything is static, so hosting is just files.
