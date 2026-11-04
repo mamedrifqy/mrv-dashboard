@@ -72,7 +72,8 @@ export default function App() {
     if (tab === "beranda") return ["program", "national", "news"];
     if (tab === "pengukuran") return ["measurement"];
     if (tab === "peta") {
-      if (petaMode === "lokasi" && pmuFilter !== "NC-1") return ["sites"];
+      if (petaMode === "lokasi" && pmuFilter === "NC-2&3") return ["nc23-aoi"];
+      if (petaMode === "lokasi" && pmuFilter !== "NC-1") return pmuFilter === "Semua" ? ["sites", "nc23-aoi"] : ["sites"];
       if (petaMode === "lokasi") return ["nc1-aoi"];
       if (petaMode === "sebaran") return ["sebaran"];
       return ["provinsi"];

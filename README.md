@@ -54,7 +54,8 @@ src/
     pck/nc1.json          – PCK NC-1, Laporan Tahunan TA 2025 (riil)
     pck/nc23.json         – PCK NC-2&3, Juknis Revisi 1 (riil)
     pck/nc4.dummy.json    – PCK NC-4 (data contoh, tidak ikut total)
-    sites.dummy.json      – lokasi contoh untuk tab Peta
+    sites.dummy.json      – lokasi contoh NC-1 dan NC-4 untuk tab Peta
+    nc23-aoi.dummy.json   – atribut ilustrasi AOI NC-2&3 (posisi, provinsi, status); nama IP dan luas dibaca dari pck/nc23.json
     news.dummy.json       – berita contoh
     schema.js             – kamus data T1–T4 (Pedoman MRV Draf 1, Lampiran A)
     qc.js                 – uji kewajaran atas baris riil

@@ -564,12 +564,26 @@ export function SpatialView({ sites, selected, setSelected, pmuFilter, ipFilter,
             <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: 14, columnGap: 12 }}>
               <Field label="Implementing Partner" value={selected.ip} />
               <Field label="Jenis kegiatan" value={selected.kegiatan} />
-              <Field label="Luas" value={`${fmt(selected.luas)} ha`} />
+              <Field label="Luas realisasi" value={`${fmt(selected.luas)} ha`} />
+              {selected.luasRencana != null && (
+                <Field
+                  label="Luas rencana (OWP)"
+                  value={`${fmt(selected.luasRencana)} ha${selected.luasRencana ? ` (${((selected.luas / selected.luasRencana) * 100).toFixed(0)}% tercapai)` : ""}`}
+                />
+              )}
               <Field label="Jenis PCK" value={selected.jenisPck} />
-              <Field label="Cadangan karbon" value={`${fmt(selected.pck)} tCO\u2082e`} />
+              <Field label="Potensi karbon" value={selected.pck == null ? "Belum dilaporkan" : `${fmt(selected.pck)} tCO\u2082e`} />
               <Field label="Kode lokasi" value={selected.id} />
             </div>
 
+            {selected.ilustrasiLokasi && (
+              <Note tone="neutral">
+                Nama IP, tipe lahan, luas rencana/realisasi, dan potensi karbon berasal dari Tabel IP Juknis NC-2&3 (riil). Posisi
+                poligon, provinsi (bila tidak tersirat dari nama IP), dan status verifikasi adalah ilustrasi karena laporan belum
+                menyertakan geometri per tapak.
+              </Note>
+            )}
+            {selected.catatan && <Note tone="warn">{selected.catatan}</Note>}
             {selected.status === "Overlap Terdeteksi" && (
               <Note tone="danger">
                 Terdeteksi irisan geometri dengan AOI {selected.overlapIp || "IP lain"}. Menunggu klarifikasi lapangan oleh PMU sebelum status ditetapkan TT MRV.

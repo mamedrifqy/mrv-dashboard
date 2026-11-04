@@ -1,7 +1,7 @@
 {
   "source": {
     "status": "dummy",
-    "dokumen": "Lokasi contoh untuk demonstrasi antarmuka Peta",
+    "dokumen": "Lokasi contoh NC-1 dan NC-4 untuk demonstrasi antarmuka Peta (AOI NC-2&3 ada di nc23-aoi.dummy.json)",
     "asOf": "—"
   },
   "sites": [
@@ -61,90 +61,6 @@
       "lat": -2.06,
       "lng": 104.66,
       "overlapIp": "IP Sumsel Bakau Mitra"
-    },
-    {
-      "id": "S05",
-      "name": "Blok Penanaman Kapuas Hulu",
-      "provinsi": "Kalimantan Barat",
-      "pmu": "NC-2&3",
-      "ip": "IP Borneo Asri",
-      "kegiatan": "Rehabilitasi Lahan",
-      "luas": 415,
-      "jenisPck": "Terestrial",
-      "pck": 11230,
-      "status": "Terverifikasi",
-      "lat": 0.85,
-      "lng": 112.9
-    },
-    {
-      "id": "S06",
-      "name": "Blok Gambut Katingan",
-      "provinsi": "Kalimantan Tengah",
-      "pmu": "NC-2&3",
-      "ip": "IP Katingan Mitra",
-      "kegiatan": "Rehabilitasi Lahan",
-      "luas": 520,
-      "jenisPck": "Terestrial",
-      "pck": 14980,
-      "status": "Terverifikasi",
-      "lat": -1.9,
-      "lng": 113.3
-    },
-    {
-      "id": "S07",
-      "name": "Blok Cegah Deforestasi Sebangau",
-      "provinsi": "Kalimantan Tengah",
-      "pmu": "NC-2&3",
-      "ip": "IP Katingan Mitra",
-      "kegiatan": "Konservasi",
-      "luas": 610,
-      "jenisPck": "Deforestasi",
-      "pck": 16240,
-      "status": "Terverifikasi",
-      "lat": -2.3,
-      "lng": 113.8
-    },
-    {
-      "id": "S08",
-      "name": "Blok Rehabilitasi Kutai Barat",
-      "provinsi": "Kalimantan Timur",
-      "pmu": "NC-2&3",
-      "ip": "IP Kaltim Asri",
-      "kegiatan": "Rehabilitasi Lahan",
-      "luas": 280,
-      "jenisPck": "Terestrial",
-      "pck": 8010,
-      "status": "Perlu Klarifikasi",
-      "lat": -0.4,
-      "lng": 115.6
-    },
-    {
-      "id": "S09",
-      "name": "Blok Mangrove Teluk Balikpapan",
-      "provinsi": "Kalimantan Timur",
-      "pmu": "NC-2&3",
-      "ip": "IP Kaltim Asri",
-      "kegiatan": "Rehabilitasi Mangrove",
-      "luas": 76,
-      "jenisPck": "Mangrove",
-      "pck": 2650,
-      "status": "Di Luar RO",
-      "lat": -1.25,
-      "lng": 116.75
-    },
-    {
-      "id": "S10",
-      "name": "Blok Konservasi Wallacea",
-      "provinsi": "Sulawesi Tengah",
-      "pmu": "NC-2&3",
-      "ip": "IP Sulteng Mandiri",
-      "kegiatan": "Konservasi",
-      "luas": 190,
-      "jenisPck": "Terestrial",
-      "pck": 5320,
-      "status": "Terverifikasi",
-      "lat": -1.4,
-      "lng": 121.4
     },
     {
       "id": "S11",

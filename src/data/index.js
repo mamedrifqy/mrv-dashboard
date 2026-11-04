@@ -11,6 +11,7 @@ import { TreePine, Waves, Droplets, Sprout } from "lucide-react";
 import program from "./program.json";
 import national from "./national.json";
 import sitesDummy from "./sites.dummy.json";
+import nc23Aoi from "./nc23-aoi.dummy.json";
 import newsDummy from "./news.dummy.json";
 import nc1 from "./pck/nc1.json";
 import nc23 from "./pck/nc23.json";
@@ -32,6 +33,7 @@ export const DATA_SOURCES = {
   program: program.source,
   national: national.source,
   sites: sitesDummy.source,
+  "nc23-aoi": nc23Aoi.source,
   news: newsDummy.source,
   "pck-NC-1": nc1.source,
   "pck-NC-2&3": nc23.source,
@@ -76,4 +78,39 @@ export const REAL_IP_ROWS = ALL_IP_ROWS.filter((r) => !r.isDummy);
 export const DUMMY_PMUS = Object.keys(REPORT_DATA).filter((k) => REPORT_DATA[k].isDummy);
 
 // --- Data contoh untuk tampilan Peta ----------------------------------------
-export const SITES = sitesDummy.sites;
+// AOI NC-2&3: nama IP, tipe lahan, luas rencana dan luas realisasi dibaca langsung
+// dari pck/nc23.json (riil). Hanya baris dengan realisasi > 0 yang punya AOI.
+// Posisi, provinsi, status verifikasi dan catatan berasal dari nc23-aoi.dummy.json
+// (ilustrasi). PCK = potensi karbon 2025 dari laporan (null bila belum dilaporkan).
+const nc23Sites = nc23.ipTable
+  .filter((r) => (r.real2025 || 0) > 0)
+  .flatMap((r) => {
+    const d = nc23Aoi.aoi[`${r.ip}|${r.tipeLahan}`];
+    if (!d) {
+      console.warn(`AOI NC-2&3 belum punya atribut ilustrasi: ${r.ip} (${r.tipeLahan})`);
+      return [];
+    }
+    const mangrove = r.tipeLahan === "Mangrove";
+    return [
+      {
+        id: `N23-${String(r.no).padStart(2, "0")}`,
+        name: `AOI ${r.ip} \u2014 ${r.tipeLahan}`,
+        provinsi: d.provinsi,
+        pmu: "NC-2&3",
+        ip: r.ip,
+        kegiatan: mangrove ? "Rehabilitasi Mangrove" : "Rehabilitasi Lahan",
+        luas: r.real2025,
+        luasRencana: r.target,
+        jenisPck: mangrove ? "Mangrove" : "Terestrial",
+        pck: r.baru2025 ?? null,
+        status: d.status,
+        lat: d.lat,
+        lng: d.lng,
+        overlapIp: d.overlapIp,
+        catatan: d.catatan,
+        ilustrasiLokasi: true,
+      },
+    ];
+  });
+
+export const SITES = [...sitesDummy.sites, ...nc23Sites];
