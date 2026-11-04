@@ -1,0 +1,122 @@
+{
+  "source": {
+    "status": "dummy",
+    "dokumen": "AOI NC-2&3: nama IP serta luas rencana dan realisasi diambil dari Tabel IP Juknis NC-2&3 (riil); posisi poligon, provinsi (bila tidak tersirat dari nama IP), status verifikasi, dan catatan adalah ilustrasi",
+    "asOf": "—"
+  },
+  "aoi": {
+    "P2SEMH|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.62,
+      "lng": 107.0,
+      "status": "Terverifikasi"
+    },
+    "Dishut Prov. Kalimantan Selatan|Terestrial": {
+      "provinsi": "Kalimantan Selatan",
+      "lat": -3.3,
+      "lng": 115.4,
+      "status": "Terverifikasi"
+    },
+    "DLHK Prov. Gorontalo|Terestrial": {
+      "provinsi": "Gorontalo",
+      "lat": 0.6,
+      "lng": 122.4,
+      "status": "Terverifikasi"
+    },
+    "PMU Rumpin|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.38,
+      "lng": 106.55,
+      "status": "Terverifikasi"
+    },
+    "YBKK|Terestrial": {
+      "provinsi": "Sulawesi Tengah",
+      "lat": -1.4,
+      "lng": 121.0,
+      "status": "Terverifikasi"
+    },
+    "FAHUTAN IPB|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.56,
+      "lng": 106.73,
+      "status": "Terverifikasi"
+    },
+    "Fahutan UGM (IKN)|Terestrial": {
+      "provinsi": "Kalimantan Timur",
+      "lat": -0.95,
+      "lng": 116.7,
+      "status": "Perlu Klarifikasi",
+      "catatan": "Realisasi 171 ha dari rencana 300 ha; bukti geotagging per tahap belum lengkap (contoh)."
+    },
+    "Ditjen KSDAE|Terestrial": {
+      "provinsi": "Sumatera Selatan",
+      "lat": -3.23,
+      "lng": 104.36,
+      "status": "Perlu Klarifikasi",
+      "catatan": "Nilai PCK 190,73 tCO₂e identik dengan 2 IP lain (QC-01); perlu konfirmasi ke penyusun laporan."
+    },
+    "Fahutan UGM (Getas)|Terestrial": {
+      "provinsi": "Jawa Tengah",
+      "lat": -7.0,
+      "lng": 111.55,
+      "status": "Perlu Klarifikasi",
+      "catatan": "Nilai PCK 190,73 tCO₂e identik dengan 2 IP lain (QC-01); perlu konfirmasi ke penyusun laporan."
+    },
+    "Dishut Prov. Sumatera Barat|Terestrial": {
+      "provinsi": "Sumatera Barat",
+      "lat": -0.9,
+      "lng": 100.35,
+      "status": "Terverifikasi"
+    },
+    "PULIK Unpad|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.93,
+      "lng": 107.77,
+      "status": "Terverifikasi"
+    },
+    "Dishut Prov. Lampung|Terestrial": {
+      "provinsi": "Lampung",
+      "lat": -5.0,
+      "lng": 105.1,
+      "status": "Terverifikasi"
+    },
+    "DKSHE IPB|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.72,
+      "lng": 106.95,
+      "status": "Perlu Klarifikasi",
+      "catatan": "Nilai PCK 190,73 tCO₂e identik dengan 2 IP lain (QC-01); perlu konfirmasi ke penyusun laporan."
+    },
+    "P2HB|Terestrial": {
+      "provinsi": "Kalimantan Tengah",
+      "lat": -1.9,
+      "lng": 113.3,
+      "status": "Terverifikasi"
+    },
+    "BP2SDM|Terestrial": {
+      "provinsi": "Jawa Barat",
+      "lat": -6.45,
+      "lng": 106.85,
+      "status": "Terverifikasi"
+    },
+    "Dishut Prov. Sumatera Selatan|Terestrial": {
+      "provinsi": "Sumatera Selatan",
+      "lat": -3.2,
+      "lng": 104.3,
+      "status": "Overlap Terdeteksi",
+      "overlapIp": "Ditjen KSDAE"
+    },
+    "Dishut Prov. Lampung|Mangrove": {
+      "provinsi": "Lampung",
+      "lat": -5.35,
+      "lng": 105.65,
+      "status": "Terverifikasi"
+    },
+    "Koprabuh Kab. Timika|Mangrove": {
+      "provinsi": "Papua Tengah",
+      "lat": -4.7,
+      "lng": 136.8,
+      "status": "Di Luar RO"
+    }
+  }
+}

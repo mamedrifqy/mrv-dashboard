@@ -27,8 +27,8 @@ export function KpiStrip({ sites }) {
   // PCK langsung (penanaman) dan PPCK deforestasi dipisah: keduanya beda
   // metode dan beda lapis akuntansi, sehingga tidak boleh dijumlahkan.
   const totalLuas = sites.reduce((a, s) => a + s.luas, 0);
-  const pckLangsung = sites.filter((s) => s.jenisPck !== "Deforestasi").reduce((a, s) => a + s.pck, 0);
-  const ppckDefor = sites.filter((s) => s.jenisPck === "Deforestasi").reduce((a, s) => a + s.pck, 0);
+  const pckLangsung = sites.filter((s) => s.jenisPck !== "Deforestasi").reduce((a, s) => a + (s.pck || 0), 0);
+  const ppckDefor = sites.filter((s) => s.jenisPck === "Deforestasi").reduce((a, s) => a + (s.pck || 0), 0);
   const verified = sites.filter((s) => s.status === "Terverifikasi").length;
   const flagged = sites.filter((s) => s.status !== "Terverifikasi").length;
 
